@@ -550,6 +550,14 @@
           headers: apiHeaders(),
           body: JSON.stringify(payload),
           signal: controller ? controller.signal : undefined
+        }).catch(function (err) {
+          /* 保险：选的是"走服务器"但服务器连不上（典型场景：电脑关机了）。
+             只要本机有密钥，就自动退回直连，别让用户卡在这儿。 */
+          if (cfg.apiKey) {
+            try { toast("连不上服务，改走直连"); } catch (e) { }
+            return directRequest(payload);
+          }
+          throw err;
         });
 
     req.then(function (res) {
