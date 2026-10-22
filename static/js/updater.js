@@ -42,24 +42,21 @@
   /* 依次试多个通道，第一个拿到的算 */
   function check() {
     var list = manifestList();
-    var i = 0;
-    function next() {
-      if (i >= list.length) return Promise.resolve(null);
-      var u = list[i++];
+    /* 两条通道的缓存时间不同（gh-proxy 约 5 分钟、Pages 约 10 分钟），
+       所以不能"谁先回用谁"，要全部试完取版本号最高的那个。 */
+    var got = [];
+    return Promise.all(list.map(function (u) {
       return fetch(u, { cache: "no-store" })
-        .then(function (r) {
-          if (!r.ok) throw new Error("http " + r.status);
-          return r.json();
-        })
-        .then(function (m) {
-          if (!m || !m.version) throw new Error("bad manifest");
-          if (cmpVer(m.version, CURRENT) <= 0) return null;   /* 已是最新 */
-          m._source = u;
-          return m;
-        })
-        .catch(function () { return next(); });
-    }
-    return next().catch(function () { return null; });
+        .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+        .then(function (m) { if (m && m.version) got.push(m); })
+        .catch(function () { /* 单条失败不影响其他 */ });
+    })).then(function () {
+      if (!got.length) return null;
+      got.sort(function (a, b) { return cmpVer(b.version, a.version); });
+      var best = got[0];
+      if (cmpVer(best.version, CURRENT) <= 0) return null;   /* 已是最新 */
+      return best;
+    });
   }
 
   function showBar(m) {

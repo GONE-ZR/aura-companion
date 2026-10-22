@@ -1,0 +1,30 @@
+安静陪伴 · 安卓签名信息
+============================================================
+
+【为什么这份重要】
+安卓要求「升级包的签名必须和已装版本一致」。
+这个 keystore 一旦丢失，之后打的新版就**盖不上**旧版 ——
+手机只能卸载重装，聊天记录也会一起没了。
+
+【keystore 位置】
+D:\tools\aura-release.keystore
+
+【别名 / 密码】
+alias        : aura
+storepass    : auracomp2026
+keypass      : 同 storepass
+有效期        : 100 年
+
+【证书指纹（用于核对是不是同一个签名）】
+SHA-1   : 75:36:60:42:32:95:D3:14:91:08:C3:9B:8B:35:C5:7C:67:B1:36:4C
+SHA-256 : 68:6A:34:09:E5:67:31:8A:A7:23:59:B1:FC:2C:40:38:C4:21:39:E4:6B:B1:4E:47:86:98:E8:84:C8:68:0B:BB
+签名算法 : SHA256withRSA
+证书主体 : CN=Aura Companion, OU=Personal, O=Aura, C=CN
+
+【怎么核对手机上装的那版是不是这个签名】
+  adb shell dumpsys package com.aura.companion | findstr -i signatures
+或者比对 SHA-256 指纹。
+
+【备份建议】
+把这个 .keystore 文件 + 本文件一起放到网盘/U盘。
+丢了就得重新开始（换签名 = 只能卸载重装）。
