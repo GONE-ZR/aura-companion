@@ -115,10 +115,16 @@
 
   function applyText(t) {
     if (!t) return;
-    var empty = document.querySelector(".empty-text");
-    if (empty && t.empty) empty.textContent = t.empty;
-    var input = document.getElementById("input");
-    if (input && t.placeholder) input.placeholder = t.placeholder;
+    if (t.empty) {
+      A.store.setStr("aura_text_empty", t.empty);
+      var empty = document.querySelector(".empty-text");
+      if (empty) empty.textContent = t.empty;
+    }
+    if (t.placeholder) {
+      A.store.setStr("aura_text_placeholder", t.placeholder);
+      var input = document.getElementById("input");
+      if (input) input.placeholder = t.placeholder;
+    }
   }
 
   function applyShortcuts(list) {
@@ -209,6 +215,22 @@
     });
   }
 
+  /* 上次拿到的文案先垫上（免得等第一次轮询） */
+  function applyCached() {
+    try {
+      var p = A.store.getStr("aura_text_placeholder", "");
+      if (p) {
+        var i = document.getElementById("input");
+        if (i) i.placeholder = p;
+      }
+      var e = A.store.getStr("aura_text_empty", "");
+      if (e) {
+        var n = document.querySelector(".empty-text");
+        if (n) n.textContent = e;
+      }
+    } catch (err) { /* ignore */ }
+  }
+
   var bus = A.bus;
 
   /* 后台管理页的实时预览：通过 postMessage 把配置推过来 */
@@ -220,6 +242,7 @@
   });
 
   function init() {
+    applyCached();
     poll();
     setInterval(poll, 30 * 1000);
     document.addEventListener("visibilitychange", function () {

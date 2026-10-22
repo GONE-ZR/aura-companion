@@ -1,45 +1,45 @@
 {
-  "version": 5,
-  "updated_at": "2026-10-22T12:49:34Z",
-  "note": "安静陪伴 · 远程配置（后台管理页保存这里，手机 App 自动拉取并热应用）",
-  "theme": {
-    "accent": "#8CA6A0",
-    "mode": "auto",
-    "radius": 18,
-    "fontScale": 1,
-    "serif": true,
-    "glow": 8,
-    "paper": "#f1efea",
-    "ink": "#14140f",
-    "wallpaperDim": 0
-  },
+  "commands": [],
   "features": {
+    "developerTools": true,
+    "emotionTint": true,
+    "export": true,
     "moodFace": true,
     "multiSession": true,
     "search": true,
-    "export": true,
     "shortcuts": true,
-    "wallpaper": true,
-    "weather": true,
-    "voice": true,
-    "emotionTint": true,
     "updateBar": true,
-    "developerTools": true
+    "voice": true,
+    "wallpaper": true,
+    "weather": true
   },
-  "text": {
-    "empty": "我在。",
-    "placeholder": "说点什么…",
-    "hint": "…"
+  "icon": {
+    "appIconUrl": "",
+    "default": "AliasDefault"
   },
+  "note": "安静陪伴 · 远程配置（后台管理页保存这里，手机 App 自动拉取并热应用）",
   "shortcuts": [
     "我有点累",
     "睡不着",
     "今天还行",
     "想安静待会儿"
   ],
-  "icon": {
-    "default": "AliasDefault",
-    "appIconUrl": ""
+  "text": {
+    "empty": "我在。",
+    "hint": "…",
+    "placeholder": "说点什么…"
   },
-  "commands": []
+  "theme": {
+    "accent": "#8CA6A0",
+    "fontScale": 1,
+    "glow": 8,
+    "ink": "#14140f",
+    "mode": "auto",
+    "paper": "#f1efea",
+    "radius": 18,
+    "serif": true,
+    "wallpaperDim": 0
+  },
+  "updated_at": "2026-10-22T12:57:44Z",
+  "version": 9
 }

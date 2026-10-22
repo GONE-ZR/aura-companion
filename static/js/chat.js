@@ -34,7 +34,10 @@
     log.textContent = "";
     var e = el("div", "empty-state");
     var t = el("p", "empty-text");
-    t.textContent = "我在。";
+    /* 文案可被后台管理页远程改写（没设过就用默认那句） */
+    var custom = "";
+    try { custom = window.Aura.store.getStr("aura_text_empty", "") || ""; } catch (err) { custom = ""; }
+    t.textContent = custom || "我在。";
     var d = el("div", "empty-dot");
     e.appendChild(t);
     e.appendChild(d);

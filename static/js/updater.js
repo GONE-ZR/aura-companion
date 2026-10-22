@@ -9,7 +9,7 @@
   if (!A) return;
 
   /* 当前版本 —— 每次发版记得改这里 */
-  var CURRENT = "1.0.1";
+  var CURRENT = "1.0.2";
 
   /* 默认清单地址（仓库里的 latest.json，随 Release 一起更新） */
   var DEFAULT_MANIFEST = "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json";

@@ -63,6 +63,22 @@
   .hidden{display:none!important}
   .danger-zone{border:1px solid rgba(170,90,80,.4);border-radius:4px;padding:14px}
   .danger-zone h3{color:#8a3f38;border-color:rgba(170,90,80,.35)}
+
+  /* ---- 窄窗口：先收掉预览，再收掉侧栏，保证表单永远能正常填 ---- */
+  @media (max-width: 1180px){
+    .wrap{grid-template-columns:210px 1fr}
+    .preview{display:none}
+    .main{padding:22px 20px}
+    .row{flex-wrap:wrap}
+    .row label{flex:0 0 118px}
+  }
+  @media (max-width: 820px){
+    .wrap{grid-template-columns:1fr}
+    .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+    .main{padding:18px 14px}
+    .row label{flex:0 0 100%}
+    .phone{display:none}
+  }
 </style>
 </head>
 <body>
@@ -375,6 +391,33 @@ function preview(){
     try { fr.contentWindow.postMessage({type:"aura:preview", config: JSON.parse(JSON.stringify(cfg))}, "*"); } catch(e){}
   }
 }
+
+/* ---------- 发布通道 ---------- */
+async function loadPub(){
+  try {
+    const st = await api("/admin/api/status");
+    document.getElementById("p-pat").value = st.has_github_token ? "（已配置，保存新值可替换）" : "";
+    const cfg2 = await api("/admin/api/config");
+    document.getElementById("p-url").value = (cfg2 && cfg2.clientUrl) || "";
+    document.getElementById("p-src").textContent =
+      (cfg2 && cfg2.clientUrl) ? cfg2.clientUrl : "GitHub raw（电脑关机也能更新）";
+  } catch (e) { /* 发布通道只是辅助信息，读失败不影响主流程 */ }
+}
+document.getElementById("p-pat-save").onclick = async ()=>{
+  const v = document.getElementById("p-pat").value.trim();
+  if(!v || v.indexOf("ghp_")!==0){ toast("令牌格式不对（ghp_ 开头）", false); return; }
+  const r = await api("/admin/api/save-secret", {name:"GITHUB_PAT", value:v});
+  if(r.ok){ toast("令牌已保存到本机 .env，以后每次保存都会自动推送 ✅", true); loadPub(); }
+  else toast("保存失败："+(r.error||""), false);
+};
+document.getElementById("p-url-save").onclick = async ()=>{
+  const v = document.getElementById("p-url").value.trim();
+  if(!cfg) cfg = await api("/admin/api/config");
+  cfg.clientUrl = v;
+  const r = await api("/admin/api/config", {config: cfg});
+  if(r.ok){ cfg = r.config; toast("地址已保存（记得同步填到手机端「配置更新地址」里）", true); }
+  else toast("保存失败："+(r.error||""), false);
+};
 
 /* ---------- 保存 ---------- */
 document.getElementById("btn-save").onclick = async ()=>{
