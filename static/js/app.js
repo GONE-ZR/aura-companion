@@ -74,7 +74,11 @@
     confirm: function (t, okText) { return openModal(t, { okText: okText || "确定", cancelText: "取消" }); },
     openModal: openModal,
     viewImage: viewImage,
-    focusInput: focusInput
+    focusInput: focusInput,
+    openDrawer: openDrawer,
+    closeDrawer: closeDrawer,
+    openSheet: openSheet,
+    closeSheet: closeSheet
   };
 
   /* ---------------- 开关组件 ---------------- */
@@ -601,6 +605,9 @@
       th.addEventListener("change", function () { window.Aura.save.thinkDelay(th.value); });
     }
 
+    /* 手机音色（只有 APK 的原生 TTS 插件存在时才显示） */
+    initVoicePicker();
+
     /* 11b. 更多 */
     var bk = $("btn-key");
     if (bk) bk.addEventListener("click", openKeyDialog);
@@ -667,6 +674,14 @@
     /* 15. 视口 */
     bindViewport();
 
+    /* 15.5 功能增强模块（多会话 / 搜索 / 导出 / 快捷短语…） */
+    loadFeatures();
+
+    /* 15.6 检查更新（手机不用重扫：直接提示有新版） */
+    if (window.Aura.updater && window.Aura.updater.init) {
+      try { window.Aura.updater.init(); } catch (e) { /* ignore */ }
+    }
+
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
       setTimeout(function () {
@@ -695,6 +710,44 @@
     bus.on("wallpaper:need-trim", function () {
       toast("存储快满了，先把旧对话收进摘要再存");
     });
+  }
+
+  /* 手机音色选择（APK 专用：列出手机里所有 TTS 引擎的音色） */
+  function initVoicePicker() {
+    var row = $("voice-pick-row");
+    var sel = $("in-voice-pick");
+    if (!row || !sel) return;
+    if (!window.Aura.voice || !window.Aura.voice.listNativeVoices) return;
+
+    window.Aura.voice.listNativeVoices().then(function (voices) {
+      if (!voices || !voices.length) return;   /* 网页版没有原生音色，不显示 */
+      row.hidden = false;
+      sel.textContent = "";
+      var cur = (cfg.voice && cfg.voice.nativeVoice) || "";
+
+      if (!cur && window.Aura.voice.autoPickNativeVoice) {
+        window.Aura.voice.autoPickNativeVoice();
+        cur = (cfg.voice && cfg.voice.nativeVoice) || "";
+      }
+
+      voices.forEach(function (v) {
+        var o = document.createElement("option");
+        var id = v.engine + "::" + v.id;
+        o.value = id;
+        var lang = /^zh[-_]cn/i.test(v.lang || "") ? "" : "（" + v.lang + "）";
+        o.textContent = v.label + lang + (v.needsNetwork ? " · 需联网" : "");
+        if (id === cur) o.selected = true;
+        sel.appendChild(o);
+      });
+
+      sel.addEventListener("change", function () {
+        if (window.Aura.voice.setNativeVoice) window.Aura.voice.setNativeVoice(sel.value);
+        toast("音色换好了，试听一下");
+        if (window.Aura.voice.speak) {
+          window.Aura.voice.speak("我在，你慢慢说。", "calm", { manual: true });
+        }
+      });
+    }).catch(function () { /* 没有插件就算了 */ });
   }
 
   /* 桌面图标切换（Capacitor 原生插件） */
@@ -755,6 +808,19 @@
       /* 取不到模板不影响聊天，只是下拉为空 */
       buildPersonaSelect();
     });
+  }
+
+  /* 功能增强模块：动态载入，避免阻塞首屏 */
+  function loadFeatures() {
+    if (document.getElementById("aura-features-script")) return;
+    var s = document.createElement("script");
+    s.id = "aura-features-script";
+    s.src = "/static/js/features.js";
+    s.onload = function () {
+      if (window.Aura.features && window.Aura.features.init) window.Aura.features.init();
+    };
+    s.onerror = function () { console.warn("[aura] features.js 加载失败"); };
+    document.head.appendChild(s);
   }
 
   function fetchVersion() {

@@ -503,16 +503,40 @@
     return httpTts(text, params);
   }
 
-  /* speechSynthesis 回落（13.12：筛 zh-CN 女声，语速 0.9，rate/pitch 仍生效） */
+  /* speechSynthesis 回落（13.12）
+     升级：排除 compact / eloquence 这类劣质引擎，优先在线自然音色 */
+  var BAD_SYNTH = /(compact|eloquence|novelty|albert|bad news|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|zarvox)/i;
+  var GOOD_SYNTH = /(natural|neural|online|premium|enhanced|xiaoxiao|xiaoyi|xiaobei|xiaoni|huihui|yaoyao|tingting|google)/i;
+  var FEMALE_SYNTH = /(xiaoxiao|xiaoyi|xiaobei|xiaoni|xiaomeng|xiaomo|xiaoxuan|tingting|huihui|yaoyao|female|女|google 普通话)/i;
+
+  function synthScore(v) {
+    var n = (v.name || "") + " " + (v.voiceURI || "");
+    var s = 0;
+    if (BAD_SYNTH.test(n)) s -= 100;
+    if (GOOD_SYNTH.test(n)) s += 30;
+    if (FEMALE_SYNTH.test(n)) s += 20;
+    if (/^zh[-_]cn/i.test(v.lang || "")) s += 12;
+    else if (/^zh/i.test(v.lang || "")) s += 5;
+    if (v.localService === false) s += 8;   /* 在线音色通常更自然 */
+    return s;
+  }
+
   function pickVoice(voices) {
     var zh = [], i, v;
     for (i = 0; i < voices.length; i++) {
       v = voices[i];
       if (v && v.lang && /^zh/i.test(v.lang)) zh.push(v);
     }
-    var female = /(xiaoxiao|xiaoyi|xiaobei|xiaoni|xiaomeng|xiaomo|xiaoxuan|huihui|yaoyao|female|女)/i;
-    for (i = 0; i < zh.length; i++) if (female.test(zh[i].name || "")) return zh[i];
-    return zh.length ? zh[0] : null;
+    if (!zh.length) return null;
+    /* 用户手动选过的优先 */
+    var picked = (A.cfg && A.cfg.voice && A.cfg.voice.nativeVoice) || "";
+    if (picked) {
+      for (i = 0; i < zh.length; i++) {
+        if ((zh[i].voiceURI === picked) || (zh[i].name === picked)) return zh[i];
+      }
+    }
+    zh.sort(function (a, b) { return synthScore(b) - synthScore(a); });
+    return zh[0];
   }
   function speakViaSynthesis(text, params, em) {
     return new Promise(function (resolve, reject) {
@@ -583,33 +607,90 @@
     var m = r.match(/([+-]?\d+(?:\.\d+)?)%/);
     if (m) rate = 0.95 * (1 + parseFloat(m[1]) / 100);
     var m2 = p.match(/([+-]?\d+(?:\.\d+)?)Hz/);
-    if (m2) pitch = 1 + parseFloat(m2[1]) / 50;
+    /* 系统 TTS 对音高敏感：偏移量打 2.5 折再交给原生侧（原生侧还会再压一次） */
+    if (m2) pitch = 1 + (parseFloat(m2[1]) / 50) * 0.25;
     return { rate: rate, pitch: pitch };
+  }
+
+  /* 手机自带的音色列表（APK 专用） */
+  var nativeVoicesCache = null;
+  function listNativeVoices() {
+    var plugin = nativeTtsPlugin();
+    if (!plugin || typeof plugin.listVoices !== "function") return Promise.resolve([]);
+    if (nativeVoicesCache) return Promise.resolve(nativeVoicesCache);
+    return plugin.listVoices().then(function (res) {
+      var voices = (res && res.voices) || [];
+      /* 按分数排序：神经网络/高品质 → 中文女声优先 */
+      voices.sort(function (a, b) {
+        return (b.score || 0) - (a.score || 0);
+      });
+      nativeVoicesCache = voices;
+      return voices;
+    }).catch(function () { return []; });
+  }
+
+  function getNativeVoice() {
+    return (A.cfg && A.cfg.voice && A.cfg.voice.nativeVoice) || "";
+  }
+
+  function setNativeVoice(id) {
+    if (A.save && A.save.voice) A.save.voice({ nativeVoice: id || "" });
+  }
+
+  /* 自动挑一个最好听的（首次没有手动选择时用） */
+  function autoPickNativeVoice() {
+    return listNativeVoices().then(function (voices) {
+      if (!voices.length) return "";
+      var cur = getNativeVoice();
+      if (cur) {
+        for (var i = 0; i < voices.length; i++) {
+          if ((voices[i].engine + "::" + voices[i].id) === cur) return cur;
+        }
+      }
+      var FEMALE = /(晓晓|晓伊|晓妮|晓北|慧慧|瑶瑶|婷婷|婉|xiaoxiao|xiaoyi|xiaoni|huihui|yaoyao|tingting|female)/i;
+      var MALE = /(云希|云健|云扬|康康|yunxi|yunjian|yunyang|kangkang|male)/i;
+      var best = null, bestScore = -1e9;
+      voices.forEach(function (v) {
+        if (!/^zh/i.test(v.lang || "")) return;
+        var s = v.score || 0;
+        var name = (v.label || "") + " " + (v.id || "");
+        if (FEMALE.test(name)) s += 15;
+        if (MALE.test(name)) s -= 10;      /* 默认要女声，但不彻底排除 */
+        if (/^zh[-_]cn/i.test(v.lang)) s += 8;
+        if (s > bestScore) { bestScore = s; best = v; }
+      });
+      if (!best) return "";
+      var id = best.engine + "::" + best.id;
+      setNativeVoice(id);
+      return id;
+    });
   }
 
   function nativeSpeak(text, params) {
     var plugin = nativeTtsPlugin();
     if (!plugin) return Promise.reject(new Error("no native tts"));
-    return new Promise(function (resolve, reject) {
-      var id = null;
-      var listener = null;
-      var timer = null;
-      function cleanup() {
-        try { if (listener) listener.remove(); } catch (e) { }
-        if (timer) clearTimeout(timer);
-      }
-      try {
-        listener = plugin.addListener("ttsDone", function (ev) {
-          if (!id || !ev || !ev.id || ev.id === id) { cleanup(); resolve({ done: true }); }
-        });
-      } catch (e) { /* ignore */ }
-      plugin.speak(Object.assign({ text: text }, nativeParams(params)))
-        .then(function (res) {
-          id = res && res.id;
-          /* 兜底：万一没有回调，30 秒后也算完成 */
-          timer = setTimeout(function () { cleanup(); resolve({ done: true }); }, 30000);
-        })
-        .catch(function (err) { cleanup(); reject(err); });
+    return autoPickNativeVoice().then(function (voiceId) {
+      return new Promise(function (resolve, reject) {
+        var id = null;
+        var listener = null;
+        var timer = null;
+        function cleanup() {
+          try { if (listener) listener.remove(); } catch (e) { }
+          if (timer) clearTimeout(timer);
+        }
+        try {
+          listener = plugin.addListener("ttsDone", function (ev) {
+            if (!id || !ev || !ev.id || ev.id === id) { cleanup(); resolve({ done: true }); }
+          });
+        } catch (e) { /* ignore */ }
+        plugin.speak(Object.assign({ text: text, voiceId: voiceId || "" }, nativeParams(params)))
+          .then(function (res) {
+            id = res && res.id;
+            /* 兜底：万一没有回调，30 秒后也算完成 */
+            timer = setTimeout(function () { cleanup(); resolve({ done: true }); }, 30000);
+          })
+          .catch(function (err) { cleanup(); reject(err); });
+      });
     });
   }
 

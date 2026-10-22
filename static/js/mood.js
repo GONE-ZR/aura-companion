@@ -63,8 +63,19 @@
   var face = S.get(S.KEYS.moodFace, null) || { type: "calm", intensity: 0, turns: 0 };
   var forcedCalm = false;   /* 自动降档到平静，直到情绪回升 */
 
+  var lastRecordedFace = null;
+
   function saveFace() {
     S.set(S.KEYS.moodFace, face);
+    /* 情绪"事件"记账：今天它高兴过 / 生气过（情感面板会显示）。
+       只在情绪**类型变了**的时候记一次，不然每轮都记会刷屏。 */
+    if (window.Aura && window.Aura.expr && window.Aura.expr.record &&
+        lastRecordedFace !== face.type) {
+      try {
+        window.Aura.expr.record(face.type, face.intensity);
+        lastRecordedFace = face.type;
+      } catch (e) { /* ignore */ }
+    }
     bus.emit("face:change", { type: face.type, intensity: face.intensity, turns: face.turns });
   }
 

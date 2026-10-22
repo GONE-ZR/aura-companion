@@ -160,11 +160,11 @@ def copy_to_clipboard(text):
 
 
 def save_qr(url):
-    """生成二维码 PNG，返回路径（失败返回 None）"""
+    """生成二维码 PNG（指向下载页），返回路径（失败返回 None）"""
     try:
         import qrcode
         qr = qrcode.QRCode(border=1)
-        qr.add_data(url)
+        qr.add_data(url.rstrip("/") + "/download")
         qr.make(fit=True)
         png = ROOT / "手机打开二维码.png"
         qr.make_image(fill_color="#3A3D3B", back_color="white").save(png)

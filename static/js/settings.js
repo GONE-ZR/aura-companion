@@ -25,6 +25,7 @@
     voice: "aura_voice",
     voiceRate: "aura_voice_rate",
     voiceMap: "aura_voice_map",
+    nativeVoice: "aura_native_voice",
     emotionVoice: "aura_emotion_voice",
     draft: "aura_draft",
     moodOn: "aura_mood_on",
@@ -203,6 +204,7 @@
       vol: 1.0,
       rateTouched: false,
       auto: true,
+      nativeVoice: "",
       map: null
     },
     moodOn: true,
@@ -240,6 +242,7 @@
     cfg.voice.vol = clamp(parseFloat(getStr(KEYS.voiceVol, "1")) || 1, 0.6, 1);
     cfg.voice.rateTouched = getStr(KEYS.voiceRateTouched, "") === "1";
     cfg.voice.auto = getStr(KEYS.emotionVoice, "1") !== "0";
+    cfg.voice.nativeVoice = getStr(KEYS.nativeVoice, "");
     var m = getJSON(KEYS.voiceMap, null);
     cfg.voice.map = {};
     for (var i = 0; i < EMOTIONS.length; i++) {
@@ -289,6 +292,10 @@
     if (patch.rateTouched !== undefined) {
       cfg.voice.rateTouched = !!patch.rateTouched;
       setStr(KEYS.voiceRateTouched, cfg.voice.rateTouched ? "1" : "0");
+    }
+    if (patch.nativeVoice !== undefined) {
+      cfg.voice.nativeVoice = patch.nativeVoice || "";
+      setStr(KEYS.nativeVoice, cfg.voice.nativeVoice);
     }
     if (patch.auto !== undefined) { cfg.voice.auto = !!patch.auto; setStr(KEYS.emotionVoice, cfg.voice.auto ? "1" : "0"); }
     if (patch.map !== undefined) {

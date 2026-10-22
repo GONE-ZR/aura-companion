@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png">
 <link rel="icon" href="/icons/icon-192.png" type="image/png">
 <link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/polish.css">
 </head>
 <body data-theme="light">
 
@@ -170,6 +171,11 @@
       <button id="in-voice-auto" class="switch" role="switch" aria-checked="true" aria-label="情绪自动换音色"><i></i></button>
       <div id="voice-map-wrap" class="voice-map"></div>
     </div>
+    <div class="drawer-item" style="--i:4" id="voice-pick-row" hidden>
+      <label class="row" for="in-voice-pick"><span>手机音色</span></label>
+      <select id="in-voice-pick" class="txt"></select>
+      <p class="hint">APK 里可以挑手机自带的更好听的音色（神经网络音色比默认的自然很多）。</p>
+    </div>
 
     <h3 class="sec">外观</h3>
     <div class="drawer-item" style="--i:0">
@@ -274,6 +280,8 @@
 <div id="toast" hidden></div>
 
 <script src="/static/js/settings.js"></script>
+<script src="/static/js/expressions.js"></script>
+<script src="/static/js/updater.js"></script>
 <script src="/static/js/mood.js"></script>
 <script src="/static/js/memory.js"></script>
 <script src="/static/js/chat.js"></script>

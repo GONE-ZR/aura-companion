@@ -455,6 +455,12 @@
       }
       body.textContent = text;
       aiMsg.content = text;
+      /* 这一条是带着什么情绪说的 —— 气泡会跟着变（生气/高兴/兴奋…） */
+      if (window.Aura.expr) {
+        try {
+          bubble.setAttribute("data-face", window.Aura.expr.faceFor(emo.type, emo.intensity));
+        } catch (e) { /* ignore */ }
+      }
       messages.push(aiMsg);
       window.Aura.messages.save(messages);
       scrollToEnd(false);
@@ -566,6 +572,22 @@
 
   /* ---------------- 对外 ---------------- */
   window.Aura.chat = {
+    /* 切换到另一个会话（多会话功能由 features.js 调用） */
+    loadSession: function (sid) {
+      if (!sid) return;
+      cfg.sessionId = sid;
+      S.setStr(S.KEYS.sessionId, sid);
+      messages = window.Aura.messages.load();
+      renderAll();
+      if (window.Aura.features && window.Aura.features.onSessionSwitch) {
+        window.Aura.features.onSessionSwitch(sid);
+      }
+    },
+    /* 重新渲染当前会话（外部改了消息后调用） */
+    reload: function () {
+      messages = window.Aura.messages.load();
+      renderAll();
+    },
     init: function () {
       log = document.getElementById("log");
       input = document.getElementById("input");

@@ -27,6 +27,9 @@ def collect():
             # 本机自动化脚本（含个人信息），不进交付副本
             if p.parent.name == "tools" and (fn.startswith("_") or fn == "cdp.js"):
                 continue
+            # 调试截图 / 手机自动安装产物，不进交付副本
+            if p.parent.name == "phone_shots" or fn.startswith("ui-") or fn.startswith("phone-preview"):
+                continue
             if p.suffix.lower() in SKIP_EXT:
                 continue
             out.append(p)
