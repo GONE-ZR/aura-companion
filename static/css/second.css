@@ -1,0 +1,119 @@
+/* ============================================================
+   second.css —— 第二篇的界面硬规则（§3）
+
+   · 气泡最大宽 78%、圆角 18pt
+   · 拆气泡间隔 200~400ms（JS 控，这里只管入场 180ms）
+   · 她"在想"用极淡呼吸框，**不用三点跳动**
+   · 办事态：立绘收到 30% / 气泡区扩展
+   · 减弱动效：关掉呼吸、眨眼、逐字输出
+   ============================================================ */
+
+/* ---------- 气泡规格 ---------- */
+#log > .msg .bubble {
+  max-width: 78%;
+  border-radius: 18px;
+}
+
+/* 入场：上移 8pt + 淡入 180ms */
+#log > .msg {
+  animation: aura-msg-in 180ms ease both;
+}
+@keyframes aura-msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 等待：呼吸框，不用三点 ---------- */
+#log > .msg .dots { display: none !important; }
+
+#log > .msg .bubble.thinking {
+  animation: aura-breathe 2.4s ease-in-out infinite;
+  background: rgba(140, 166, 160, 0.10) !important;
+  border: 1px solid rgba(140, 166, 160, 0.22) !important;
+  box-shadow: none !important;
+  min-width: 64px;
+  min-height: 42px;
+}
+@keyframes aura-breathe {
+  0%, 100% { opacity: .55; transform: scale(0.985); }
+  50%      { opacity: .95; transform: scale(1); }
+}
+
+/* "她在想"时立绘视线游移（不是三点动画） */
+body[data-thinking="1"] #ft-face,
+body[data-thinking="1"] .ft-face {
+  animation: aura-gaze 3.2s ease-in-out infinite;
+}
+@keyframes aura-gaze {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  30%      { transform: translateX(1.5px) rotate(1deg); }
+  65%      { transform: translateX(-1.5px) rotate(-1deg); }
+}
+
+/* ---------- 办事态（让她办）---------- */
+body[data-work="work"] #ft-face,
+body[data-work="work"] .ft-face {
+  transform: scale(0.3) translateY(6px);
+  opacity: .35;
+  transition: transform 700ms ease, opacity 700ms ease;
+}
+body[data-work="work"] #log {
+  /* 气泡区扩展（立绘让位后腾出的空间） */
+  padding-bottom: 8px;
+}
+body[data-work="work"] #log > .msg .bubble {
+  max-width: 92%;
+}
+
+/* ---------- 安全干预：无气泡，全宽卡片 ---------- */
+.safety-card {
+  margin: 14px 0 !important;
+  width: 100%;
+}
+
+/* ---------- 减弱动效（§3.9，一级设置）---------- */
+body[data-motion="reduced"] *,
+body[data-motion="reduced"] *::before,
+body[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition-duration: 1ms !important;
+}
+body[data-motion="reduced"] #log > .msg {
+  animation: none !important;
+}
+body[data-motion="reduced"] #ft-face,
+body[data-motion="reduced"] .ft-face {
+  animation: none !important;
+}
+
+/* 系统级偏好也尊重（用户没在 App 里设置时） */
+@media (prefers-reduced-motion: reduce) {
+  #log > .msg { animation: none !important; }
+  #log > .msg .bubble.thinking { animation: none !important; }
+  body[data-thinking="1"] #ft-face,
+  body[data-thinking="1"] .ft-face { animation: none !important; }
+}
+
+/* ---------- 动态字体：最大档不破版 ---------- */
+@media (max-width: 380px) {
+  #log > .msg .bubble { max-width: 86%; }
+}
+
+/* ---------- 快捷回应（最多 3 个，≤6 字）---------- */
+.quick-replies {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px 0;
+  flex-wrap: wrap;
+}
+.quick-replies button {
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, .14);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.quick-replies button:hover { background: rgba(0, 0, 0, .04); }

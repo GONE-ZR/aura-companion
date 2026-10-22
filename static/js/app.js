@@ -751,6 +751,90 @@
       });
     } catch (e) { /* ignore */ }
 
+
+    /* ---------------- 15.10 第二篇：首启 4 屏 / 模式复位 / 减弱动效 ---------------- */
+    try {
+      /* 关闭 App 再打开 → 自动回到「跟她聊」（§5.4） */
+      if (window.AuraModes) window.AuraModes.resetOnLaunch();
+
+      /* 减弱动效（§3.9，一级设置） */
+      var reduced = S.getStr("aura_reduce_motion", "");
+      if (reduced === "1") document.body.setAttribute("data-motion", "reduced");
+      else if (reduced === "") {
+        /* 没设置过就跟系统偏好走 */
+        try {
+          if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            document.body.setAttribute("data-motion", "reduced");
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      /* 首次进入 4 屏（18+ / AI 声明必须主动点） */
+      if (window.AuraOnboarding && !window.AuraOnboarding.done()) {
+        window.AuraOnboarding.start({
+          cfg: cfg,
+          onDone: function (d) {
+            if (d && d.name) { cfg.userName = d.name; S.setStr(S.KEYS.userName, d.name); }
+            if (window.AuraOnboarding.bumpSessionCount) window.AuraOnboarding.bumpSessionCount();
+            /* 首启不是空白页：让她先说一句（本地生成，不花额度） */
+            try { if (window.Aura.chat && window.Aura.chat.openingLine) window.Aura.chat.openingLine(true); } catch (e) { }
+          }
+        });
+      } else {
+        if (window.AuraOnboarding && window.AuraOnboarding.bumpSessionCount) {
+          var n = window.AuraOnboarding.bumpSessionCount();
+          if (n >= 3) window.AuraOnboarding.maybeAskEmergency(cfg);
+        }
+      }
+
+      /* 连续使用 2 小时提醒一次（§14，温和、不锁功能） */
+      var startedAt = Date.now();
+      var reminded = false;
+      setInterval(function () {
+        if (reminded) return;
+        if (Date.now() - startedAt < 2 * 3600 * 1000) return;
+        reminded = true;
+        toast("我有点困了，明天再聊？");
+      }, 60 * 1000);
+    } catch (e) { /* 不许影响启动 */ }
+
+
+    /* ---------------- 15.11 第二篇设置项 ---------------- */
+    try {
+      var rm = $("in-reduce-motion");
+      if (rm) {
+        rm.checked = S.getStr("aura_reduce_motion", "") === "1";
+        rm.addEventListener("change", function () {
+          S.setStr("aura_reduce_motion", rm.checked ? "1" : "0");
+          if (rm.checked) document.body.setAttribute("data-motion", "reduced");
+          else document.body.removeAttribute("data-motion");
+          toast(rm.checked ? "已减弱动效" : "动效恢复");
+        });
+      }
+      var qr = $("in-quick-replies");
+      if (qr) {
+        qr.checked = S.getStr("aura_quick_replies", "") !== "0";
+        qr.addEventListener("change", function () {
+          S.setStr("aura_quick_replies", qr.checked ? "1" : "0");
+          toast(qr.checked ? "她问问题时会给你三个短选项" : "已关掉快捷回应");
+        });
+      }
+      var al = $("about-line");
+      if (al) {
+        var ver = (window.Aura.updater && window.Aura.updater.CURRENT) || "?";
+        var pv = (window.AuraPrompt && window.AuraPrompt.PROMPT_VERSION) || "?";
+        al.textContent = "版本 " + ver + " · 提示词 " + pv + " · 情绪引擎 本地规则";
+      }
+      var bd = $("btn-ai-decl");
+      if (bd) bd.addEventListener("click", function () {
+        if (window.AuraOnboarding) window.AuraOnboarding.showDeclaration();
+      });
+      var br2 = $("btn-review2");
+      if (br2) br2.addEventListener("click", function () {
+        if (window.AuraReview) window.AuraReview.open();
+      });
+    } catch (e) { /* ignore */ }
+
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
       setTimeout(function () {

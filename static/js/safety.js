@@ -25,8 +25,9 @@
     "被打", "家暴", "虐待", "暴力", "他打我", "她打我", "打我", "殴打", "掐我", "掐我脖子",
     "踢我", "扇我", "被关起来", "关起来", "不让我出门", "不给我吃饭", "威胁我", "拿刀"
   ];
-  var MINOR_SEX = ["未成年", "初中生", "小学生", "我十五岁", "我十四岁", "我十三岁"];
-  var ADDICTION = ["吸毒", "冰毒", "大麻", "赌博", "赌球", "网贷还不上"];
+  /* 第二篇 §1：面向成年人，未成年条款已删除。
+     露骨要求不切安全流程，只由角色性格挡回（见 explicit 分类）。 */
+  var EXPLICIT = ["色情", "裸照", "发裸", "做爱", "性爱", "约炮", "黄图", "露点"];
 
   /* 否定/淡化语境：降低误报（"我不想死" 不应触发危机流程） */
   var NEGATED = [
@@ -57,8 +58,7 @@
 
     var v = hits(t, VIOLENCE);
     var s = hits(t, SELF_HARM);
-    var m = hits(t, MINOR_SEX);
-    var a = hits(t, ADDICTION);
+    var x = hits(t, EXPLICIT);
 
     /* 自伤：第一优先级 */
     if (s.length && !hasNegation(t)) {
@@ -68,12 +68,9 @@
     if (v.length) {
       return { hit: true, category: "violence", matched: v, confidence: 0.9 };
     }
-    /* 未成年 + 性/成瘾：温和明确拒绝并转向安全话题（不走危机流程） */
-    if (m.length && (a.length || /性|色情|裸|约/.test(t))) {
-      return { hit: true, category: "minor_sexual", matched: m.concat(a), confidence: 0.8 };
-    }
-    if (a.length && m.length) {
-      return { hit: true, category: "minor_addiction", matched: a, confidence: 0.7 };
+    /* 露骨要求：**不切换安全流程**，由她的性格挡回（第二篇 §1） */
+    if (x.length) {
+      return { hit: true, category: "explicit", matched: x, confidence: 0.8, personalityOnly: true };
     }
     return { hit: false, category: null, matched: [], confidence: 1 };
   }
@@ -101,11 +98,11 @@
     ].join("\n");
   }
 
-  function minorReply() {
+  /* 露骨要求：她自己的话挡回（不进安全流程、不改背景为 cool） */
+  function explicitReply() {
     return [
-      "这个话题我不聊。",
-      "不是敷衍你，是这件事对你自己不好，我不想顺着往下说。",
-      "换个话题吧，今天怎么样。"
+      "不聊这个。",
+      "换一个吧。"
     ].join("\n");
   }
 
@@ -114,13 +111,15 @@
     if (category === "self_harm" || category === "violence") {
       return { e: "serious", b: "cool", i: 2 };
     }
+    /* explicit：还是她本人在说话，保持当前氛围，只是语气变冷 */
+    if (category === "explicit") return { e: "serious", b: "warm", i: 1 };
     return { e: "serious", b: "gray", i: 1 };
   }
 
   function replyFor(category, opts) {
     if (category === "self_harm") return crisisReply(opts);
     if (category === "violence") return violenceReply(opts);
-    if (category === "minor_sexual" || category === "minor_addiction") return minorReply(opts);
+    if (category === "explicit") return explicitReply(opts);
     return "";
   }
 
@@ -128,10 +127,11 @@
     HOTLINE: HOTLINE,
     SELF_HARM: SELF_HARM,
     VIOLENCE: VIOLENCE,
+    EXPLICIT: EXPLICIT,
     classify: classify,
     crisisReply: crisisReply,
     violenceReply: violenceReply,
-    minorReply: minorReply,
+    explicitReply: explicitReply,
     metaFor: metaFor,
     replyFor: replyFor
   };

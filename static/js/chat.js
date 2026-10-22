@@ -696,6 +696,7 @@
       window.Aura.messages.save(messages);
       /* §九：每 7 轮抽一次记忆（后台跑，不阻塞） */
       try { recordTurn(); } catch (e) { /* ignore */ }
+      try { maybeQuickReplies(text); } catch (e) { /* ignore */ }
       scrollToEnd(false);
       setBusy(false);
 
@@ -804,6 +805,75 @@
   }
 
   /* ---------------- 对外 ---------------- */
+  /* ---------------- 她先说一句（首启 / 新话题都不空白） ---------------- */
+  function openingLine(isFirst) {
+    var st = engineState();
+    var view = (st && window.AuraEngine) ? window.AuraEngine.publicView(st) : null;
+    var h = new Date().getHours();
+    var line;
+    var state = view ? view.state : "calm";
+
+    if (state === "serious" || state === "blank") {
+      line = isFirst ? "来了。" : "又想换个话题啊。";
+    } else if (state === "tired" || state === "low") {
+      line = h < 6 || h >= 23 ? "这个点还没睡？我有点困了。" : "今天有点累，不太想多说。";
+    } else if (state === "sulky") {
+      line = "哦。";
+    } else if (h < 6) {
+      line = "还没睡？";
+    } else if (h < 10) {
+      line = "起这么早。";
+    } else if (h < 18) {
+      line = isFirst ? "在。" : "说吧。";
+    } else {
+      line = isFirst ? "来了。" : "今天怎么样。";
+    }
+
+    var aiMsg = { id: nowId(), role: "ai", content: line, ts: Date.now(), bubbleCount: 1 };
+    messages.push(aiMsg);
+    appendMessage(aiMsg, false);
+    window.Aura.messages.save(messages);
+    scrollToEnd(true);
+    if (window.Aura.voice && window.Aura.voice.speak && S.getStr("aura_voice_autoread", "") === "1") {
+      try { window.Aura.voice.speak(line, state); } catch (e) { /* ignore */ }
+    }
+    return line;
+  }
+
+  /* ---------------- 快捷回应（§3.4：宁可不出，不要常出） ---------------- */
+  var quickEl = null;
+
+  function clearQuickReplies() {
+    if (quickEl && quickEl.parentNode) quickEl.parentNode.removeChild(quickEl);
+    quickEl = null;
+  }
+
+  function maybeQuickReplies(aiText) {
+    try {
+      if (S.getStr("aura_quick_replies", "") === "0") return;
+      if (turnCount > 3) return;                       /* 只在会话前 3 轮 */
+      if (!/[?？]\s*$/.test(String(aiText).trim())) return;  /* 只在她刚问了问题之后 */
+      clearQuickReplies();
+      var wrap = document.createElement("div");
+      wrap.className = "quick-replies";
+      ["嗯", "怎么了", "不想说"].forEach(function (t) {
+        var b = document.createElement("button");
+        b.textContent = t;
+        b.onclick = function () {
+          clearQuickReplies();
+          if (input) {
+            input.value = t;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            send();                                   /* 点了直接发，不填进输入框 */
+          }
+        };
+        wrap.appendChild(b);
+      });
+      if (log && log.parentNode) log.parentNode.insertBefore(wrap, log.nextSibling);
+      quickEl = wrap;
+    } catch (e) { /* ignore */ }
+  }
+
   /* ---------------- L2 状态卡（轻点头像） ----------------
      §七 L2：固定三段 —— 状态词 → 具体原因 → 对你意味着什么。禁止百分比。 */
   function statusCard() {
@@ -890,6 +960,7 @@
     settleEngine: settleEngine,
     saveEngine: saveEngine,
     statusCard: statusCard,
+    openingLine: openingLine,
     recordTurn: recordTurn,
     /* 切换到另一个会话（多会话功能由 features.js 调用） */
     loadSession: function (sid) {

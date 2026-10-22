@@ -11,7 +11,8 @@ const suites = [
   ["eval_prompt", "提示词装配顺序与预算"],
   ["eval_safety", "第 10 条（危机干预）"],
   ["eval_memory", "第 9 条（0.5 置信度不当事实）"],
-  ["eval_meta", "第 11 条（首行标签 + 降级）"]
+  ["eval_meta", "第 11 条（首行标签 + 降级）"],
+  ["eval_second", "第二篇：四处调整 / 三条新约束 / 命名 / 提示词小节"]
 ];
 if (!offline) suites.push(["eval_live", "第 1/2/3/4/5/8 条（需真模型）"]);
 

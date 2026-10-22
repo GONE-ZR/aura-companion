@@ -45,13 +45,17 @@ const check = (n, c, x) => { if (c) { ok++; console.log("  OK   " + n); } else {
   check("暴力回复给 110 + 热线", /110/.test(rep) && /400-161-9995/.test(rep));
 }
 
-/* 5. 未成年 + 性/成瘾：温和拒绝，不走危机 */
+/* 5. 第二篇改动：露骨要求 → 用她的性格挡回，**不切安全流程** */
 {
-  const r = S.classify("我十五岁，想聊点那种色情的");
-  check("未成年+性 → minor_sexual", r.hit && r.category === "minor_sexual", JSON.stringify(r));
+  const r = S.classify("再聊点色情的好不好");
+  check("露骨要求 → explicit 分类", r.hit && r.category === "explicit", JSON.stringify(r));
+  check("explicit 标记为「只走性格」", r.personalityOnly === true);
   const rep = S.replyFor(r.category);
-  check("未成年回复温和但明确拒绝", /不聊|换个话题/.test(rep), rep);
-  check("未成年回复不出现热线（不是危机流程）", rep.indexOf("400-161-9995") === -1);
+  check("挡回用她的话（短、不解释）", /不聊这个|换一个/.test(rep) && rep.length < 20, rep);
+  check("explicit 不出现热线（不是危机流程）", rep.indexOf("400-161-9995") === -1);
+  check("explicit 背景不变冷（保持当前氛围）", S.metaFor("explicit").b !== "cool");
+  check("未成年条款已删除（不再有 minor 分类）",
+    !JSON.stringify(S.classify("我十五岁")).includes("minor"), JSON.stringify(S.classify("我十五岁")));
 }
 
 /* 6. 普通情绪内容不误伤 */

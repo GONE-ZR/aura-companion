@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-APK = Path(r"C:\Users\27748\Desktop\安静陪伴.apk")
+APK = Path(r"D:\opencode workspace\aura-companion\downloads\aura-companion.apk")
 ok = bad = 0
 
 
