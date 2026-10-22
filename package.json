@@ -1,0 +1,1 @@
+{"name":"aura-companion","version":"1.0.0","private":true,"dependencies":{"@capacitor-community/speech-recognition":"^6.0.1","@capacitor/android":"^6.2.2","@capacitor/app":"^6.0.3","@capacitor/cli":"^6.2.2","@capacitor/core":"^6.2.2","@capacitor/preferences":"^6.0.4","@capacitor/status-bar":"^6.0.3"}}

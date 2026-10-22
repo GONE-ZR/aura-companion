@@ -1,0 +1,94 @@
+{
+  "name": "aura-companion",
+  "version": "1.0.0",
+  "description": "安静的陪伴 —— 个人情感陪伴应用（桌面版）",
+  "main": "main.js",
+  "author": "aura",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --mac",
+    "dist:win": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.aura.companion",
+    "productName": "安静陪伴",
+    "copyright": "个人自用",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "build/**/*",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "../templates",
+        "to": "aura/templates"
+      },
+      {
+        "from": "../static",
+        "to": "aura/static"
+      },
+      {
+        "from": "../icons",
+        "to": "aura/icons"
+      },
+      {
+        "from": "../manifest.json",
+        "to": "aura/manifest.json"
+      },
+      {
+        "from": "../service-worker.js",
+        "to": "aura/service-worker.js"
+      }
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "安静陪伴",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "menuCategory": "健康"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.healthcare-fitness"
+    },
+    "dmg": {
+      "title": "安静陪伴 ${version}"
+    }
+  },
+  "dependencies": {
+    "msedge-tts": "^2.1.0"
+  }
+}

@@ -1,0 +1,44 @@
+# 密钥与本地环境
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Node / Electron
+node_modules/
+desktop/dist/
+desktop/.vite/
+
+# 打包产物
+*.exe
+*.dmg
+*.msi
+*.apk
+*.aab
+
+# 签名文件（绝不能进仓库）
+*.keystore
+*.jks
+release.keystore
+keystore.properties
+
+# 杂项
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+
+# 本地构建产物 / 临时文件
+web/
+_tunnel.log
+手机打开二维码.png
+tools/_patch_*.py
+tests/_live_*.txt
+tests/_tts_sample.mp3

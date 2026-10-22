@@ -1,0 +1,801 @@
+/* ============================================================
+   app.js —— 主控：启动 / 抽屉 / 设置接线 / 情感面板 / 更新机制
+   ============================================================ */
+(function () {
+  "use strict";
+
+  var S = window.Aura.store;
+  var cfg = window.Aura.cfg;
+  var bus = window.Aura.bus;
+
+  var REG = null;
+  var updateBar = null;
+  var sheetOpen = false;
+
+  /* ---------------- 通用 UI 助手 ---------------- */
+  function $(id) { return document.getElementById(id); }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast");
+    if (!t) { console.log("[aura toast]", msg); return; }
+    t.textContent = msg;
+    t.hidden = false;
+    t.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      t.classList.remove("show");
+      t.hidden = true;
+    }, 2600);
+  }
+
+  var modalResolve = null;
+  function openModal(text, opts) {
+    opts = opts || {};
+    var m = $("modal"), scrim = $("modal-scrim");
+    var t = $("modal-text"), extra = $("modal-extra");
+    var ok = $("modal-ok"), cancel = $("modal-cancel");
+    if (!m) return Promise.resolve(false);
+    t.textContent = text || "";
+    extra.textContent = "";
+    if (opts.extraNode) extra.appendChild(opts.extraNode);
+    ok.textContent = opts.okText || "知道了";
+    cancel.hidden = !opts.cancelText;
+    cancel.textContent = opts.cancelText || "取消";
+    m.hidden = false;
+    scrim.hidden = false;
+    return new Promise(function (res) {
+      modalResolve = function (ok2) {
+        m.hidden = true;
+        scrim.hidden = true;
+        modalResolve = null;
+        res(ok2);
+      };
+    });
+  }
+  function closeModal(v) { if (modalResolve) modalResolve(v); }
+
+  function viewImage(src) {
+    var img = document.createElement("img");
+    img.src = src;
+    img.alt = "图片";
+    img.style.cssText = "max-width:100%;max-height:70vh;border-radius:12px;display:block";
+    openModal("", { extraNode: img, okText: "关闭" });
+  }
+
+  function focusInput() {
+    var i = $("input");
+    if (i) i.focus();
+  }
+
+  window.Aura.ui = {
+    toast: toast,
+    alert: function (t) { return openModal(t, {}); },
+    confirm: function (t, okText) { return openModal(t, { okText: okText || "确定", cancelText: "取消" }); },
+    openModal: openModal,
+    viewImage: viewImage,
+    focusInput: focusInput
+  };
+
+  /* ---------------- 开关组件 ---------------- */
+  function setSwitch(el, on) {
+    if (!el) return;
+    el.classList.toggle("on", !!on);
+    el.setAttribute("aria-checked", on ? "true" : "false");
+  }
+  function bindSwitch(el, onChange) {
+    if (!el) return;
+    el.addEventListener("click", function () {
+      var on = el.getAttribute("aria-checked") !== "true";
+      setSwitch(el, on);
+      onChange(on);
+    });
+  }
+
+  /* ---------------- 抽屉 ---------------- */
+  function openDrawer() {
+    $("drawer").classList.add("open");
+    $("drawer").setAttribute("aria-hidden", "false");
+    $("scrim").hidden = false;
+    document.body.classList.add("drawer-open");
+  }
+  function closeDrawer() {
+    $("drawer").classList.remove("open");
+    $("drawer").setAttribute("aria-hidden", "true");
+    $("scrim").hidden = true;
+    document.body.classList.remove("drawer-open");
+  }
+
+  /* ---------------- 情感面板 ---------------- */
+  function openSheet() {
+    sheetOpen = true;
+    renderSheet();
+    $("sheet").classList.add("open");
+    $("sheet").setAttribute("aria-hidden", "false");
+    $("sheet-scrim").hidden = false;
+  }
+  function closeSheet() {
+    sheetOpen = false;
+    $("sheet").classList.remove("open");
+    $("sheet").setAttribute("aria-hidden", "true");
+    $("sheet-scrim").hidden = true;
+  }
+
+  function renderSheet() {
+    if (!window.Aura.mood) return;
+    $("sheet-stage").textContent = window.Aura.mood.stageWord();
+    $("sheet-temp").textContent = window.Aura.mood.tempWord();
+    $("sheet-note").textContent = window.Aura.mood.note();
+
+    var pts = window.Aura.mood.chartData();
+    var line = $("chart-line"), area = $("chart-area"), dot = $("chart-dot");
+    var W = 300, H = 88, pad = 6;
+    if (!pts.length) {
+      line.setAttribute("d", "");
+      area.setAttribute("d", "");
+      dot.setAttribute("r", "0");
+      return;
+    }
+    if (pts.length === 1) {
+      /* 只有一天数据 → 一条水平短线，不报错、不空图 */
+      var y = H / 2;
+      line.setAttribute("d", "M " + pad + " " + y + " L " + (W - pad) + " " + y);
+      area.setAttribute("d", "");
+      dot.setAttribute("cx", String(W - pad));
+      dot.setAttribute("cy", String(y));
+      dot.setAttribute("r", "2");
+      return;
+    }
+    var min = Math.min.apply(null, pts), max = Math.max.apply(null, pts);
+    if (max - min < 1) { min = min - 1; max = max + 1; }
+    var stepX = (W - pad * 2) / (pts.length - 1);
+    var d = "";
+    for (var i = 0; i < pts.length; i++) {
+      var x = pad + i * stepX;
+      var y = H - pad - ((pts[i] - min) / (max - min)) * (H - pad * 2);
+      d += (i === 0 ? "M " : "L ") + x.toFixed(1) + " " + y.toFixed(1);
+    }
+    line.setAttribute("d", d);
+    area.setAttribute("d", d + " L " + (W - pad) + " " + (H - pad) + " L " + pad + " " + (H - pad) + " Z");
+    dot.setAttribute("cx", String(W - pad));
+    dot.setAttribute("cy", String((H - pad - ((pts[pts.length - 1] - min) / (max - min)) * (H - pad * 2)).toFixed(1)));
+    dot.setAttribute("r", "2");
+  }
+
+  /* ---------------- 版本 / 更新 ---------------- */
+  function setUpdateBar(show, version) {
+    if (!updateBar) return;
+    updateBar.hidden = !show;
+    if (show && version) {
+      var t = updateBar.querySelector(".ub-text");
+      if (t) t.textContent = "有新版本了";
+    }
+  }
+
+  var updatePending = false;   /* 已发现新版本，等合适的时机再显示 */
+
+  function registerSW() {
+    if (!("serviceWorker" in navigator)) return;
+    if (location.protocol === "file:") return;
+
+    var hadController = !!navigator.serviceWorker.controller;
+
+    function watchWorker(nw) {
+      if (!nw) return;
+      nw.addEventListener("statechange", function () {
+        /* ⚠️ SW 用了 skipWaiting()，新 worker 会立刻激活，
+           所以 reg.waiting 永远是 null —— 必须靠 statechange 判断。 */
+        if (nw.state === "installed" && navigator.serviceWorker.controller) {
+          updatePending = true;
+          maybeShowUpdate();
+        }
+      });
+    }
+
+    navigator.serviceWorker.register("/service-worker.js").then(function (reg) {
+      REG = reg;
+      /* 已有等待中的新版本（比如上次没点更新就关了） */
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        updatePending = true;
+        maybeShowUpdate();
+      }
+      /* ⚠️ 页面加载时浏览器已经自动做过一次更新检查，
+         新 worker 可能在我们挂监听器之前就开始装了 —— 必须补挂一次。 */
+      watchWorker(reg.installing);
+      reg.addEventListener("updatefound", function () {
+        watchWorker(reg.installing);
+      });
+    }).catch(function () { /* 注册失败不打扰用户 */ });
+
+    /* 新 SW 接管页面时也会触发（skipWaiting 的必然结果） */
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (!hadController) { hadController = true; return; }   /* 首次安装，不算更新 */
+      updatePending = true;
+      maybeShowUpdate();
+    });
+
+    /* 每 30 分钟检查一次 + 回到前台检查一次 */
+    setInterval(function () { if (REG) REG.update(); }, 30 * 60 * 1000);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && REG) REG.update();
+    });
+  }
+
+  /* 正在流式输出时收到更新提示 → 延后显示，等回复结束再出现（规格 23.3 f） */
+  function maybeShowUpdate() {
+    if (!updatePending) return;
+    if (window.Aura.chat && window.Aura.chat.isBusy && window.Aura.chat.isBusy()) {
+      return;   /* 回复结束后 chat 会再调一次 */
+    }
+    var skipped = S.get(S.KEYS.updateSkipped, null);
+    if (skipped && skipped.v === updateVersion()) return;
+    setUpdateBar(true);
+  }
+
+  function updateVersion() {
+    if (REG && REG.waiting) return "waiting";
+    return "pending";
+  }
+
+  function checkUpdate(reg) {
+    reg = reg || REG;
+    if (!reg) return;
+    reg.update().then(function () {
+      if (reg.waiting) {
+        updatePending = true;
+        maybeShowUpdate();
+      }
+    }).catch(function () { /* ignore */ });
+  }
+
+  function doUpdate() {
+    /* ① 存草稿 ② 停朗读 ③ 刷新 */
+    var i = $("input");
+    if (i) S.setStr(S.KEYS.draft, i.value);
+    if (window.Aura.voice) window.Aura.voice.stop();
+    location.reload();
+  }
+
+  /* ---------------- 设置接线 ---------------- */
+  function buildPersonaSelect() {
+    var sel = $("in-persona");
+    if (!sel) return;
+    sel.textContent = "";
+    var list = cfg.templates || [];
+    list.forEach(function (p) {
+      var o = document.createElement("option");
+      o.value = p.id;
+      o.textContent = p.name;
+      sel.appendChild(o);
+    });
+    var cur = (cfg.persona && cfg.persona.id) || "default";
+    sel.value = cur;
+    var ta = $("in-persona-text");
+    if (ta) ta.value = (cfg.persona && cfg.persona.text) || "";
+  }
+
+  function buildVoiceSelect() {
+    var sel = $("in-voice-base");
+    if (!sel) return;
+    sel.textContent = "";
+    window.Aura.VOICES.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v.id;
+      o.textContent = v.name;
+      sel.appendChild(o);
+    });
+    sel.value = cfg.voice.base;
+  }
+
+  function buildAccentSwatches() {
+    var box = $("accent-swatches");
+    if (!box) return;
+    box.textContent = "";
+    ["#8CA6A0", "#90A4B0", "#B0A79E", "#C0A0A0", "#9A9AB0"].forEach(function (hex) {
+      var b = document.createElement("button");
+      b.className = "swatch";
+      b.type = "button";
+      b.style.background = hex;
+      b.setAttribute("aria-label", hex);
+      b.addEventListener("click", function () {
+        window.Aura.save.accent(hex);
+        var inp = $("in-accent");
+        if (inp) inp.value = hex;
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function buildThemeSeg() {
+    var seg = $("in-theme");
+    if (!seg) return;
+    Array.prototype.forEach.call(seg.querySelectorAll("button"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-v") === cfg.theme);
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(seg.querySelectorAll("button"), function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        window.Aura.save.theme(b.getAttribute("data-v"));
+      });
+    });
+  }
+
+  function syncDrawer() {
+    var n = $("in-ai-name"); if (n) n.value = cfg.aiName;
+    var u = $("in-user-name"); if (u) u.value = cfg.userName;
+    var pa = $("in-persona-text"); if (pa) pa.value = (cfg.persona && cfg.persona.text) || "";
+    var ps = $("in-persona"); if (ps && cfg.persona) ps.value = cfg.persona.id;
+
+    setSwitch($("in-couple"), cfg.coupleOn);
+    setSwitch($("in-mood-on"), cfg.moodOn);
+    setSwitch($("in-tint"), cfg.emotionTint);
+
+    var fl = $("in-face-level"); if (fl) fl.value = cfg.faceLevel;
+
+    var vb = $("in-voice-base"); if (vb) vb.value = cfg.voice.base;
+    var vr = $("in-voice-rate"); if (vr) vr.value = cfg.voice.rate;
+    var vrl = $("val-rate"); if (vrl) vrl.textContent = Number(cfg.voice.rate).toFixed(2);
+    var vv = $("in-voice-vol"); if (vv) vv.value = cfg.voice.vol;
+    var vvl = $("val-vol"); if (vvl) vvl.textContent = Math.round(cfg.voice.vol * 100);
+    setSwitch($("in-voice-auto"), cfg.voice.auto);
+
+    var mk = $("in-mask"); if (mk) mk.value = cfg.mask;
+    var mv = $("val-mask"); if (mv) mv.textContent = String(cfg.mask);
+
+    var ax = $("in-accent"); if (ax) ax.value = cfg.accentHex;
+
+    var md2 = $("in-mode"); if (md2) md2.value = cfg.mode;
+    var ki = $("in-key"); if (ki) ki.value = cfg.apiKey ? "••••••••" : "";
+    var th = $("in-think"); if (th) th.value = cfg.thinkDelay || "short";
+
+    if (window.Aura.voice && window.Aura.voice.renderVoiceMap) {
+      window.Aura.voice.renderVoiceMap($("voice-map-wrap"));
+    }
+    var cow = $("btn-couple-off");
+    if (cow) cow.hidden = !cfg.coupleOn;
+  }
+
+  /* ---------------- 键盘弹起滚到最新 ---------------- */
+  function bindViewport() {
+    if (!window.visualViewport) return;
+    var vv = window.visualViewport;
+    function onResize() {
+      var h = window.innerHeight;
+      document.documentElement.style.setProperty("--vh", h + "px");
+      if (window.Aura.chat && !window.Aura.chat.isUserScrolledUp) {
+        var log = $("log");
+        if (log) { try { log.scrollIntoView({ behavior: "auto", block: "end" }); } catch (e) { } }
+      }
+    }
+    vv.addEventListener("resize", onResize);
+    onResize();
+  }
+
+  /* ---------------- 密钥 ---------------- */
+  function openKeyDialog() {
+    var wrap = document.createElement("div");
+    var label = document.createElement("p");
+    label.textContent = "填 DeepSeek API 密钥（只存在这台设备上，不上传）。";
+    label.style.cssText = "font-size:13px;color:var(--text-dim);margin:6px 0 10px";
+    var inp = document.createElement("input");
+    inp.type = "password";
+    inp.className = "txt";
+    inp.placeholder = "sk-...";
+    inp.value = cfg.apiKey || "";
+    inp.style.cssText = "width:100%";
+    wrap.appendChild(label);
+    wrap.appendChild(inp);
+    openModal("API 密钥", { extraNode: wrap, okText: "保存" }).then(function (ok) {
+      if (ok) {
+        window.Aura.save.apiKey(inp.value.trim());
+        toast(inp.value.trim() ? "密钥已保存在本机" : "密钥已清空");
+      }
+    });
+  }
+
+  /* ---------------- 启动 ---------------- */
+  function boot() {
+    /* 1. 存储契约 + 迁移 */
+    window.Aura.loadAll();
+    var mig = window.Aura.data.migrate();
+    if (!mig.ok) toast("历史数据版本较旧，正在兼容");
+
+    /* 2. 主题 / 配色 / 壁纸 */
+    window.Aura.apply.theme();
+    window.Aura.apply.accent();
+    window.Aura.apply.wallpaper();
+
+    /* 3. 服务端地址（APK 用）→ 改写相对请求 */
+    if (cfg.server) {
+      var orig = window.fetch;
+      window.fetch = function (input, init) {
+        if (typeof input === "string" && input.charAt(0) === "/" && cfg.server) {
+          input = cfg.server.replace(/\/+$/, "") + input;
+        }
+        return orig(input, init);
+      };
+    }
+
+    /* 4. 顶栏名字 */
+    var nm = $("ai-name");
+    if (nm) nm.textContent = cfg.aiName || "我";
+
+    /* 4'. 人设模板 / 音色 / 色板 / 主题 —— 都要先拿到预设再渲染 */
+    loadPersonas();
+    buildVoiceSelect();
+    buildAccentSwatches();
+    buildThemeSeg();
+
+    /* 5. 各模块 */
+    if (window.Aura.mood) window.Aura.mood.init();
+    if (window.Aura.chat) window.Aura.chat.init();
+    if (window.Aura.voice) window.Aura.voice.init();
+    if (window.Aura.wallpaper) window.Aura.wallpaper.init();
+    if (window.Aura.weather) window.Aura.weather.init();
+
+    /* 6. 抽屉 */
+    var ds = $("btn-settings");
+    if (ds) ds.addEventListener("click", function () { openDrawer(); syncDrawer(); });
+    var dc = $("drawer-close");
+    if (dc) dc.addEventListener("click", closeDrawer);
+    var scrim = $("scrim");
+    if (scrim) scrim.addEventListener("click", closeDrawer);
+
+    /* 7. 重置会话 */
+    var br = $("btn-reset");
+    if (br) br.addEventListener("click", function () {
+      window.Aura.ui.confirm("会清掉这次聊过的内容，但不会忘记你。", "清掉").then(function (ok) {
+        if (ok) { window.Aura.chat.reset(); toast("已经清掉了"); }
+      });
+    });
+
+    /* 8. 壁纸快捷入口 */
+    var bw = $("btn-wall");
+    if (bw) bw.addEventListener("click", function () {
+      if (window.Aura.wallpaper) window.Aura.wallpaper.pick("gallery");
+    });
+
+    /* 9. 情感面板 */
+    var md = $("mood-dot");
+    if (md) md.addEventListener("click", openSheet);
+    var sc = $("sheet-scrim");
+    if (sc) sc.addEventListener("click", closeSheet);
+    var sclose = $("btn-sheet-close");
+    if (sclose) sclose.addEventListener("click", closeSheet);
+    var coupleOff = $("btn-couple-off");
+    if (coupleOff) coupleOff.addEventListener("click", function () {
+      window.Aura.save.coupleOn(false);
+      setSwitch($("in-couple"), false);
+      closeSheet();
+      toast("切回默认陪伴了");
+    });
+    bindSheetDrag();
+
+    /* 10. 设置项 */
+    var n = $("in-ai-name");
+    if (n) n.addEventListener("change", function () {
+      window.Aura.save.aiName(n.value.trim());
+      if ($("ai-name")) $("ai-name").textContent = cfg.aiName;
+    });
+    var u = $("in-user-name");
+    if (u) u.addEventListener("change", function () { window.Aura.save.userName(u.value.trim()); });
+
+    var ps = $("in-persona");
+    if (ps) ps.addEventListener("change", function () {
+      var id = ps.value;
+      var list = cfg.templates || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === id) {
+          var ta = $("in-persona-text");
+          if (ta) ta.value = list[i].text;
+          break;
+        }
+      }
+    });
+    var pa = $("btn-persona-apply");
+    if (pa) pa.addEventListener("click", function () {
+      var ta = $("in-persona-text");
+      var id = ps ? ps.value : "default";
+      window.Aura.save.persona({ id: id, text: ta ? ta.value : "" });
+      toast("换好了");
+    });
+    var pr = $("btn-persona-reset");
+    if (pr) pr.addEventListener("click", function () {
+      var id = ps ? ps.value : "default";
+      var list = cfg.templates || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === id) {
+          var ta = $("in-persona-text");
+          if (ta) ta.value = list[i].text;
+          toast("恢复成原文了");
+          break;
+        }
+      }
+    });
+
+    bindSwitch($("in-couple"), function (on) {
+      if (on) {
+        window.Aura.save.coupleOn(true);
+        var notice = (cfg.templates && cfg.templates.coupleNotice) || "";
+        window.Aura.ui.alert("这是陪伴关系的一种形式。它会一直在，但不会替掉现实里的人，\n也不会因为你不在而难过。它不能替代治疗。");
+      } else {
+        window.Aura.save.coupleOn(false);
+      }
+    });
+    bindSwitch($("in-mood-on"), function (on) { window.Aura.save.moodOn(on); });
+    bindSwitch($("in-tint"), function (on) { window.Aura.save.emotionTint(on); });
+
+    var fl = $("in-face-level");
+    if (fl) fl.addEventListener("change", function () {
+      window.Aura.save.faceLevel(fl.value);
+      window.Aura.apply.tint(null);
+    });
+    var fp = $("btn-face-preview");
+    if (fp) fp.addEventListener("click", function () {
+      if (window.Aura.mood) window.Aura.mood.previewSequence();
+    });
+
+    var vb = $("in-voice-base");
+    if (vb) vb.addEventListener("change", function () {
+      window.Aura.save.voice({ base: vb.value });
+      if (window.Aura.voice && window.Aura.voice.clearCache) window.Aura.voice.clearCache();
+    });
+    var vr = $("in-voice-rate");
+    if (vr) vr.addEventListener("input", function () {
+      window.Aura.save.voice({ rate: parseFloat(vr.value), rateTouched: true });
+      var l = $("val-rate"); if (l) l.textContent = Number(vr.value).toFixed(2);
+    });
+    var vv = $("in-voice-vol");
+    if (vv) vv.addEventListener("input", function () {
+      window.Aura.save.voice({ vol: parseFloat(vv.value) });
+      var l = $("val-vol"); if (l) l.textContent = Math.round(parseFloat(vv.value) * 100);
+    });
+    bindSwitch($("in-voice-auto"), function (on) {
+      window.Aura.save.voice({ auto: on });
+      var wrap = $("voice-map-wrap");
+      if (wrap) wrap.style.display = on ? "" : "none";
+      if (window.Aura.voice && window.Aura.voice.clearCache) window.Aura.voice.clearCache();
+    });
+
+    var mk = $("in-mask");
+    if (mk) mk.addEventListener("input", function () {
+      window.Aura.save.mask(parseInt(mk.value, 10));
+      var l = $("val-mask"); if (l) l.textContent = mk.value;
+    });
+
+    var ax = $("in-accent");
+    if (ax) ax.addEventListener("change", function () {
+      var v = (ax.value || "").trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) { window.Aura.save.accent(v.toUpperCase()); }
+      else { ax.value = cfg.accentHex; }
+    });
+
+    /* 11. 连接方式 / 密钥 / 停顿 */
+    var md2 = $("in-mode");
+    if (md2) {
+      md2.value = cfg.mode;
+      md2.addEventListener("change", function () {
+        window.Aura.save.mode(md2.value);
+        toast(md2.value === "direct" ? "改成手机直连了" : "改成走服务器了");
+      });
+    }
+    var keyInput = $("in-key");
+    if (keyInput) {
+      keyInput.value = cfg.apiKey || "";
+      var ks = $("btn-key-save");
+      if (ks) ks.addEventListener("click", function () {
+        var v = (keyInput.value || "").trim();
+        window.Aura.save.apiKey(v);
+        keyInput.value = v ? "••••••••" : "";
+        toast(v ? "密钥已保存在这台设备上" : "密钥已清除");
+      });
+      var kc = $("btn-key-clear");
+      if (kc) kc.addEventListener("click", function () {
+        window.Aura.save.apiKey("");
+        keyInput.value = "";
+        toast("密钥已清除");
+      });
+    }
+    var th = $("in-think");
+    if (th) {
+      th.value = cfg.thinkDelay || "short";
+      th.addEventListener("change", function () { window.Aura.save.thinkDelay(th.value); });
+    }
+
+    /* 11b. 更多 */
+    var bk = $("btn-key");
+    if (bk) bk.addEventListener("click", openKeyDialog);
+
+    var be = $("btn-export");
+    if (be) be.addEventListener("click", function () {
+      var data = window.Aura.data.exportAll();
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "aura-data-" + new Date().toISOString().slice(0, 10) + ".json";
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    });
+    var bi = $("btn-import");
+    var fi = $("file-import");
+    if (bi && fi) bi.addEventListener("click", function () { fi.click(); });
+    if (fi) fi.addEventListener("change", function (e) {
+      var f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          var obj = JSON.parse(rd.result);
+          if (window.Aura.data.importAll(obj)) { toast("导入好了，正在重新载入"); setTimeout(function () { location.reload(); }, 600); }
+          else toast("这个文件读不了");
+        } catch (err) { toast("这个文件读不了"); }
+      };
+      rd.readAsText(f);
+    });
+
+    /* 12. 弹窗按钮 */
+    var ok = $("modal-ok");
+    if (ok) ok.addEventListener("click", function () { closeModal(true); });
+    var cancel = $("modal-cancel");
+    if (cancel) cancel.addEventListener("click", function () { closeModal(false); });
+    var mscrim = $("modal-scrim");
+    if (mscrim) mscrim.addEventListener("click", function () { closeModal(false); });
+
+    /* 13. 版本 */
+    fetchVersion();
+
+    /* 14. Service Worker */
+    updateBar = $("update-bar");
+    registerSW();
+    var ub = $("ub-update");
+    if (ub) ub.addEventListener("click", doUpdate);
+    var us = $("ub-skip");
+    if (us) us.addEventListener("click", function () {
+      setUpdateBar(false);
+      updatePending = false;
+      S.set(S.KEYS.updateSkipped, { v: "skip-" + Date.now() });
+    });
+    var cu = $("btn-check-update");
+    if (cu) cu.addEventListener("click", function () {
+      if (!REG) { toast("这个环境不支持自动更新"); return; }
+      REG.update().then(function () {
+        if (REG.waiting) { setUpdateBar(true); toast("有新版本了"); }
+        else toast("已经是最新了");
+      }).catch(function () { toast("检查失败"); });
+    });
+
+    /* 15. 视口 */
+    bindViewport();
+
+    /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
+    if (!S.storageOK) {
+      setTimeout(function () {
+        toast("这个打开方式不让网页存东西，刷新会复原");
+      }, 800);
+    }
+
+    /* 17. 首次启动引导（19.9） */
+    if (S.getStr("aura_first_run", "") !== "1") {
+      S.setStr("aura_first_run", "1");
+      setTimeout(function () {
+        if (cfg.mode === "direct" && !cfg.apiKey) {
+          window.Aura.ui.alert("先填一个 DeepSeek 密钥（只存在这台设备上），再设个名字、设个称呼，其余都能在设置里改。");
+        } else {
+          window.Aura.ui.alert("设个名字，设个称呼，其余都能在设置里改。");
+        }
+      }, 600);
+    }
+
+    /* 17'. 桌面图标切换（仅 APK 有原生能力） */
+    initIconSwitcher();
+
+    /* 18. 事件订阅 */
+    bus.on("toast", toast);
+    bus.on("chat:idle", function () { maybeShowUpdate(); });
+    bus.on("wallpaper:need-trim", function () {
+      toast("存储快满了，先把旧对话收进摘要再存");
+    });
+  }
+
+  /* 桌面图标切换（Capacitor 原生插件） */
+  var ICON_SETS = [
+    { alias: "AliasDefault", hex: "#8CA6A0", name: "灰绿" },
+    { alias: "AliasWarm", hex: "#B0A79E", name: "暖灰" },
+    { alias: "AliasBlue", hex: "#90A4B0", name: "雾蓝" },
+    { alias: "AliasRose", hex: "#C0A0A0", name: "藕粉" },
+    { alias: "AliasViolet", hex: "#9A9AB0", name: "灰紫" }
+  ];
+
+  function initIconSwitcher() {
+    var row = $("icon-row");
+    var box = $("icon-swatches");
+    var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.IconSwitcher;
+    if (!row || !box || !plugin) return;
+    row.hidden = false;
+    box.textContent = "";
+    ICON_SETS.forEach(function (s) {
+      var b = document.createElement("button");
+      b.className = "swatch";
+      b.type = "button";
+      b.style.background = s.hex;
+      b.title = s.name;
+      b.setAttribute("aria-label", s.name);
+      if (cfg.iconName === s.alias) b.classList.add("on");
+      b.addEventListener("click", function () {
+        plugin.switchIcon({ name: s.alias }).then(function () {
+          window.Aura.save.iconName(s.alias);
+          Array.prototype.forEach.call(box.querySelectorAll(".swatch"), function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+          toast("桌面图标已更换。部分手机需要回到桌面等一两秒");
+        }).catch(function () {
+          toast("这个系统不支持换图标");
+        });
+      });
+      box.appendChild(b);
+    });
+  }
+
+  /* 从后端取人设模板（单一数据源，前端不抄一份） */
+  function loadPersonas() {
+    fetch("/api/personas").then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.presets || !d.presets.length) return;
+      window.Aura.save.templates(d.presets);
+      if (!cfg.persona || !cfg.persona.text) {
+        for (var i = 0; i < d.presets.length; i++) {
+          if (d.presets[i].id === "default") {
+            window.Aura.save.persona({ id: "default", text: d.presets[i].text });
+            break;
+          }
+        }
+      }
+      buildPersonaSelect();
+      var ta = $("in-persona-text");
+      if (ta && cfg.persona) ta.value = cfg.persona.text;
+    }).catch(function () {
+      /* 取不到模板不影响聊天，只是下拉为空 */
+      buildPersonaSelect();
+    });
+  }
+
+  function fetchVersion() {
+    fetch("/api/version").then(function (r) { return r.json(); }).then(function (d) {
+      var line = $("version-line");
+      if (line) line.textContent = "版本 " + (d.version || "") + " · " + (d.date || "");
+      /* 服务端没配密钥 → 问一次（只在服务器模式下才需要） */
+      if (d && !d.has_key && cfg.mode === "server" && !cfg.apiKey
+          && S.getStr(S.KEYS.keyNotice, "") !== "1") {
+        S.setStr(S.KEYS.keyNotice, "1");
+        setTimeout(function () { toast("还没设置 API 密钥，点设置里的「设置 API 密钥」"); }, 1500);
+      }
+    }).catch(function () { });
+  }
+
+  /* 情感面板下滑关闭 */
+  function bindSheetDrag() {
+    var sheet = $("sheet");
+    if (!sheet) return;
+    var startY = 0, dragging = false;
+    sheet.addEventListener("touchstart", function (e) {
+      startY = e.touches[0].clientY;
+      dragging = true;
+    }, { passive: true });
+    sheet.addEventListener("touchmove", function (e) {
+      if (!dragging) return;
+      var dy = e.touches[0].clientY - startY;
+      if (dy > 0) sheet.style.transform = "translateY(" + dy + "px)";
+    }, { passive: true });
+    sheet.addEventListener("touchend", function (e) {
+      if (!dragging) return;
+      dragging = false;
+      var dy = (e.changedTouches[0].clientY - startY);
+      sheet.style.transform = "";
+      if (dy > 60) closeSheet();
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();

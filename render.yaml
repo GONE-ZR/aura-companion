@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: aura-companion
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --threads 4 --timeout 300 --keep-alive 75
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_MODEL
+        value: deepseek-flash
+      - key: TTS_PROVIDER
+        value: edge

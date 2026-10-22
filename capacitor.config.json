@@ -1,0 +1,22 @@
+{
+  "appId": "com.aura.companion",
+  "appName": "安静陪伴",
+  "webDir": "web",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#F6F4F0"
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    },
+    "SpeechRecognition": {
+      "language": "zh-CN",
+      "partialResults": true,
+      "maxResults": 1
+    }
+  }
+}
