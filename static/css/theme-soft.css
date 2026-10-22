@@ -1,0 +1,206 @@
+/* ══════════════════════════════════════════════════════════════════════
+   柔和流动主题（Soft Flow）—— 给「安静陪伴」的移动端界面做视觉升级
+   ----------------------------------------------------------------------
+   设计语言：柔光渐变 + 大圆角 + 玻璃层 + 彩色气泡（HeroUI 系）
+   铁律：
+     ① 只用两个色相（主色 + 主色+42°），多了就廉价
+     ② 阴影必须"带色"（用 hsl(主色) 不用纯黑），纯黑阴影 = 脏
+     ③ 渐变只给「我的气泡」和「发送按钮」，别处一律纯色
+     ④ 圆角统一走 --r-* 令牌，别在组件里写死 px
+   ----------------------------------------------------------------------
+   ★ 全部规则挂在 body[data-soft="1"] 下 —— 不加这个属性 = 零影响
+   ★ 配色由 body[data-palette="violet|mint|amber"] 选，
+     但 --acc-h/s/l 会被 settings.js 的 inline style 覆盖，
+     所以这里只负责**衍生变量**（气泡渐变、阴影色、玻璃色），
+     主色本身仍由设置面板控制，两者互不打架。
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 基础衍生令牌 ─────────────────────────────────────── */
+body[data-soft="1"]{
+  /* 柔光双色：主色 + 主色偏 55°，只在背景层用 */
+  --soft-glow-a: hsl(var(--acc-h) 92% 72%);
+  --soft-glow-b: hsl(calc(var(--acc-h) + 55) 90% 74%);
+
+  /* 带色阴影：不用纯黑 */
+  --soft-shadow:    0 12px 30px -14px hsl(var(--acc-h) 60% 42% / .38);
+  --soft-shadow-lg: 0 20px 44px -20px hsl(var(--acc-h) 60% 42% / .45);
+
+  /* 玻璃层 */
+  --soft-glass:      rgba(255,255,255,.72);
+  --soft-glass-line: rgba(255,255,255,.80);
+  --soft-glass-dim:  rgba(255,255,255,.42);
+
+  /* 气泡渐变（我的消息）—— 第二个色相由主色 +42° 推出，
+     所以主色一变（设置面板拖滑块 / 情绪色偏移）整个界面自动跟着变 */
+  --soft-me-a: hsl(var(--acc-h) var(--acc-s) calc(var(--acc-l) - 8%));
+  --soft-me-b: hsl(calc(var(--acc-h) + 42) var(--acc-s) calc(var(--acc-l) + 6%));
+
+  /* 圆角放大：流动风的关键 */
+  --r-bubble: 20px;
+  --r-card:   18px;
+  --r-input:  22px;
+  --r-thumb:  14px;
+
+  /* 缓动更"软"一点 */
+  --ease-soft: cubic-bezier(.22,.68,0,1);
+}
+
+/* ── 三套配色预设 ───────────────────────────────────────
+   ★ 注意：--acc-h/s/l 是 settings.js 写在 **html 元素 inline style** 上的
+     （主色滑块 + 情绪色偏移都走这条路）。
+     所以这里**故意不覆盖** --acc-h/s/l —— 一旦在 CSS 里覆盖，
+     会把「情绪色调色」（规格 12.12）顶掉。
+   ★ 预设配色请用 JS 写 html 的 inline style（见 theme-soft.js / 预览页）。
+   ★ 这三个类只做「额外色相偏移」：紫粉 / 薄荷青 / 橙红，
+     让同一套质感在不同配色下有各自的性格。
+   ─────────────────────────────────────────────────── */
+body[data-soft="1"][data-palette="violet"]{
+  --soft-me-b:hsl(calc(var(--acc-h) + 40) 76% 64%);
+}
+body[data-soft="1"][data-palette="mint"]{
+  --soft-me-b:hsl(calc(var(--acc-h) + 26) 70% 50%);
+}
+body[data-soft="1"][data-palette="amber"]{
+  --soft-me-b:hsl(calc(var(--acc-h) - 26) 88% 62%);
+}
+
+/* ── 背景柔光：更大、更艳、带噪点压色带 ───────────────── */
+body[data-soft="1"] #glow-layer{ opacity:1; }
+body[data-soft="1"] #glow-layer::before{
+  background:
+    radial-gradient(760px 620px at 8% -10%,  hsl(var(--acc-h) 92% 76% / .40), transparent 62%),
+    radial-gradient(720px 600px at 98% 6%,   hsl(calc(var(--acc-h) + 55) 90% 78% / .34), transparent 60%),
+    radial-gradient(900px 760px at 50% 112%, hsl(var(--acc-h) 88% 82% / .30), transparent 64%);
+}
+body[data-soft="1"] .glow{ filter: blur(90px); opacity:.55; }
+body[data-soft="1"] .glow-a{ background: var(--soft-glow-a); }
+body[data-soft="1"] .glow-b{ background: var(--soft-glow-b); }
+
+/* ── 顶栏：玻璃层 ─────────────────────────────────────── */
+body[data-soft="1"] #top{
+  background: var(--soft-glass);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: 0 8px 24px -18px hsl(var(--acc-h) 60% 42% / .5);
+}
+
+/* ── 我的气泡：渐变 + 白字 + 带色阴影 ─────────────────── */
+body[data-soft="1"] #log > .msg.me > .bubble{
+  background: linear-gradient(135deg, var(--soft-me-a), var(--soft-me-b));
+  color: #fff;
+  border-color: transparent;
+  box-shadow:
+    0 16px 32px -16px hsl(var(--acc-h) 70% 42% / .62),
+    inset 0 1px 0 rgba(255,255,255,.34);
+  border-bottom-right-radius: 8px;
+}
+body[data-soft="1"] #log > .msg.me .bubble-text{ color:#fff; }
+
+/* ── 她的气泡：半透明玻璃 ─────────────────────────────── */
+body[data-soft="1"] #log > .msg.ai > .bubble{
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: var(--soft-shadow);
+  border-bottom-left-radius: 8px;
+}
+
+/* ── 输入栏：胶囊玻璃 ─────────────────────────────────── */
+body[data-soft="1"] .input-bar{
+  background: var(--soft-glass);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  border-radius: var(--r-input);
+  box-shadow: var(--soft-shadow-lg);
+}
+body[data-soft="1"] .input-bar:focus-within{
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow:
+    var(--soft-shadow-lg),
+    0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+body[data-soft="1"] #input::placeholder{ color: color-mix(in srgb, var(--text-dim) 70%, transparent); }
+
+/* ── 发送按钮：渐变圆 ─────────────────────────────────── */
+body[data-soft="1"] .send-btn{
+  background: linear-gradient(135deg, var(--soft-me-a), var(--soft-me-b));
+  color: #fff;
+  border: 0;
+  box-shadow: 0 10px 22px -10px hsl(var(--acc-h) 70% 42% / .7), inset 0 1px 0 rgba(255,255,255,.35);
+  transition: transform .18s var(--ease-soft), box-shadow .22s ease, filter .2s ease;
+}
+body[data-soft="1"] .send-btn:not(:disabled):hover{
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 16px 30px -10px hsl(var(--acc-h) 70% 42% / .8), inset 0 1px 0 rgba(255,255,255,.45);
+  filter: saturate(112%);
+}
+body[data-soft="1"] .send-btn:not(:disabled):active{ transform: translateY(0) scale(.97); }
+
+/* ── 图标按钮：hover 出光晕 ───────────────────────────── */
+body[data-soft="1"] .icon-btn{
+  border-radius: 50%;
+  transition: background .2s ease, color .2s ease, transform .2s var(--ease-soft),
+              box-shadow .24s ease;
+}
+body[data-soft="1"] .icon-btn:hover{
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -10px hsl(var(--acc-h) 70% 42% / .6);
+}
+
+/* ── 快捷短语：胶囊 ───────────────────────────────────── */
+body[data-soft="1"] .ft-chip{
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  transition: transform .2s var(--ease-soft), box-shadow .22s ease, background .2s ease;
+}
+body[data-soft="1"] .ft-chip:hover{
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: 0 8px 18px -12px hsl(var(--acc-h) 70% 42% / .55);
+  transform: translateY(-1px);
+}
+
+/* ── 卡片 / 抽屉：玻璃 + 带色阴影 ─────────────────────── */
+body[data-soft="1"] .drawer-item,
+body[data-soft="1"] .drawer-body .sec{
+  border-radius: var(--r-card);
+}
+body[data-soft="1"] #sheet,
+body[data-soft="1"] #modal{
+  border-radius: var(--r-lg, 28px);
+  box-shadow: var(--soft-shadow-lg);
+}
+
+/* ── 夜漫下把渐变压暗一档，避免刺眼 ───────────────────── */
+body[data-soft="1"][data-theme="dark"]{
+  --soft-glass:      rgba(28,28,34,.72);
+  --soft-glass-line: rgba(255,255,255,.10);
+  --soft-shadow:    0 12px 30px -14px hsl(var(--acc-h) 70% 30% / .55);
+  --soft-shadow-lg: 0 20px 44px -20px hsl(var(--acc-h) 70% 25% / .6);
+}
+body[data-soft="1"][data-theme="dark"] #log > .msg.me > .bubble{
+  background: linear-gradient(135deg,
+              hsl(var(--acc-h) var(--acc-s) calc(var(--acc-l) - 4%)),
+              hsl(calc(var(--acc-h) + 42) var(--acc-s) calc(var(--acc-l) + 2%)));
+  box-shadow:
+    0 16px 32px -16px hsl(var(--acc-h) 80% 22% / .7),
+    inset 0 1px 0 rgba(255,255,255,.2);
+}
+body[data-soft="1"][data-theme="dark"] .glow{ opacity:.34; }
+body[data-soft="1"][data-theme="dark"] #glow-layer::before{ opacity:.5; }
+
+/* ── 不支持 backdrop-filter 的浏览器：换成实底，别糊 ───── */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  body[data-soft="1"] #top,
+  body[data-soft="1"] .input-bar{
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+  }
+  body[data-soft="1"] #log > .msg.ai > .bubble{
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+  }
+}

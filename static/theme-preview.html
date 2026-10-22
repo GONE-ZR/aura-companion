@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>安静陪伴 · 柔和流动主题预览</title>
+
+<!-- ★ 真实项目样式，一行没改 -->
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/polish.css">
+<link rel="stylesheet" href="/static/css/theme-soft.css">
+
+<style>
+  /* ── 仅本预览页用的样式（不影响 App 本体） ───────────── */
+  html{ background:#22242a; }
+  body{ max-width:430px; margin-inline:auto; min-height:100dvh; position:relative; }
+  @media (min-width:520px){
+    body{ box-shadow:0 0 0 1px rgba(255,255,255,.08), 0 30px 80px -40px #000; }
+  }
+
+  #panel{
+    position:fixed; right:14px; bottom:14px; z-index:9999;
+    background:rgba(20,21,26,.92); color:#f2f2f4;
+    border-radius:16px; padding:12px 14px; width:214px;
+    box-shadow:0 18px 44px -18px rgba(0,0,0,.8);
+    font:12px/1.5 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    backdrop-filter:blur(14px);
+  }
+  #panel h5{
+    margin:0 0 9px; font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:#9a9aa4; font-weight:700;
+  }
+  #panel .row{ display:flex; gap:6px; margin-bottom:8px; align-items:center; }
+  #panel .row > span{ font-size:10.5px; color:#9a9aa4; width:34px; flex:none; }
+  #panel button{
+    flex:1; padding:7px 4px; border-radius:9px; cursor:pointer;
+    border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06);
+    color:#e8e8ec; font:600 11.5px/1.2 inherit;
+    transition:background .16s ease, border-color .16s ease, transform .16s ease;
+  }
+  #panel button:hover{ background:rgba(255,255,255,.12); transform:translateY(-1px); }
+  #panel button[aria-pressed="true"]{
+    background:#7c6cff; border-color:#7c6cff; color:#fff;
+  }
+  #panel .sw-row{ display:flex; gap:8px; }
+  #panel .sw{
+    width:30px; height:30px; border-radius:9px; cursor:pointer; flex:none;
+    border:2px solid rgba(255,255,255,.2); padding:0;
+  }
+  #panel .sw[aria-pressed="true"]{ border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.35); }
+  #panel .sw[data-p="violet"]{ background:linear-gradient(135deg,#7c5cf5,#d05cf0); }
+  #panel .sw[data-p="mint"]{   background:linear-gradient(135deg,#2fb98c,#37b6d6); }
+  #panel .sw[data-p="amber"]{  background:linear-gradient(135deg,#f59f2c,#f0553f); }
+  #panel .tip{
+    margin:8px 0 0; font-size:10px; color:#7c7c86; line-height:1.55;
+  }
+</style>
+</head>
+
+<body data-theme="light" data-soft="1" data-palette="violet">
+
+<div id="wp-layer" aria-hidden="true"></div>
+<div id="mask-layer" aria-hidden="true"></div>
+<div id="glow-layer" aria-hidden="true">
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+</div>
+
+<header class="top" id="top">
+  <div class="who">
+    <span id="ai-name">安静陪伴</span>
+    <span class="status-dot" aria-hidden="true"></span>
+    <button id="mood-dot" class="mood-dot" aria-label="情感状态" title="情感状态"></button>
+  </div>
+  <div class="acts">
+    <button id="btn-wall" class="icon-btn" aria-label="换壁纸">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9.5" r="1.5" fill="currentColor"/><path d="M5.5 17l4.2-4.6 3 3.2 2.4-2.4 3.4 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="btn-reset" class="icon-btn" aria-label="重置会话">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="btn-settings" class="icon-btn" aria-label="设置">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h9M17 17h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="15" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="log" role="log" aria-live="polite" aria-label="对话">
+  <div class="msg ai"><div class="bubble"><div class="bubble-text">在呢。今天过得怎么样？</div></div></div>
+  <div class="msg me"><div class="bubble"><div class="bubble-text">刚下课，食堂排队排了半天。</div></div></div>
+  <div class="msg ai"><div class="bubble"><div class="bubble-text">那挺折磨人的。吃了什么？</div></div></div>
+  <div class="msg me"><div class="bubble"><div class="bubble-text">麻辣烫，加了两份豆皮。</div></div></div>
+  <div class="msg ai"><div class="bubble"><div class="bubble-text">豆皮是好东西，蛋白质够。晚上回宿舍记得加件外套，今晚要降温。</div></div></div>
+</main>
+
+<footer class="input-bar" id="input-bar">
+  <button id="btn-img" class="icon-btn" aria-label="发一张图">
+    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 16.5l4-4.4 2.8 3 2.2-2.2 3.7 4.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="btn-mic" class="icon-btn mic" aria-label="语音输入">
+    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <span class="mic-ring"></span><span class="mic-ring"></span><span class="mic-ring"></span>
+  </button>
+  <textarea id="input" rows="1" placeholder="说点什么…" autocomplete="off" spellcheck="false"></textarea>
+  <button id="btn-send" class="send-btn" aria-label="发送" disabled>
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 12l16-7-7 16-2-6z" fill="currentColor"/></svg>
+  </button>
+</footer>
+
+<!-- ══════════ 预览专用控制面板 ══════════ -->
+<div id="panel">
+  <h5>主题预览</h5>
+
+  <div class="row"><span>配色</span>
+    <div class="sw-row">
+      <button class="sw" data-p="violet" aria-pressed="true"  aria-label="紫"></button>
+      <button class="sw" data-p="mint"   aria-pressed="false" aria-label="薄荷"></button>
+      <button class="sw" data-p="amber"  aria-pressed="false" aria-label="暖橙"></button>
+    </div>
+  </div>
+
+  <div class="row"><span>明暗</span>
+    <button id="btnLight" aria-pressed="true">日漫</button>
+    <button id="btnDark"  aria-pressed="false">夜漫</button>
+  </div>
+
+  <div class="row"><span>风格</span>
+    <button id="btnSoft"  aria-pressed="true">柔和流动</button>
+    <button id="btnPlain" aria-pressed="false">原版</button>
+  </div>
+
+  <p class="tip">
+    真实项目样式（app.css + polish.css）+ 新增 theme-soft.css。<br>
+    「原版」= 去掉 data-soft，回到改造前的样子。
+  </p>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var body = document.body;
+
+  /* 配色 */
+  document.querySelectorAll('#panel .sw').forEach(function(b){
+    b.addEventListener('click', function(){
+      body.setAttribute('data-palette', b.dataset.p);
+      document.querySelectorAll('#panel .sw').forEach(function(x){
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      /* 主色写到 **html** 的 inline style —— 和 settings.js 完全同一套机制，
+         这样情绪色偏移、主题色滑块、预设三者才不打架 */
+      var map = { violet:[270,74,62], mint:[166,64,48], amber:[32,90,58] };
+      var v = map[b.dataset.p];
+      var r = document.documentElement.style;
+      r.setProperty('--acc-h', v[0]);
+      r.setProperty('--acc-s', v[1]);
+      r.setProperty('--acc-l', v[2]);
+    });
+  });
+
+  /* 明暗 */
+  function setTheme(t){
+    body.setAttribute('data-theme', t);
+    document.getElementById('btnLight').setAttribute('aria-pressed', String(t === 'light'));
+    document.getElementById('btnDark').setAttribute('aria-pressed', String(t === 'dark'));
+  }
+  document.getElementById('btnLight').addEventListener('click', function(){ setTheme('light'); });
+  document.getElementById('btnDark').addEventListener('click', function(){ setTheme('dark'); });
+
+  /* 柔和开关 */
+  function setSoft(on){
+    if (on) body.setAttribute('data-soft','1'); else body.removeAttribute('data-soft');
+    document.getElementById('btnSoft').setAttribute('aria-pressed', String(on));
+    document.getElementById('btnPlain').setAttribute('aria-pressed', String(!on));
+  }
+  document.getElementById('btnSoft').addEventListener('click', function(){ setSoft(true); });
+  document.getElementById('btnPlain').addEventListener('click', function(){ setSoft(false); });
+
+  /* 输入框自动放大 + 发送按钮可用（模拟真实行为） */
+  var input = document.getElementById('input');
+  var send = document.getElementById('btn-send');
+  input.addEventListener('input', function(){
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+    send.disabled = !input.value.trim();
+  });
+})();
+</script>
+
+</body>
+</html>
