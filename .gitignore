@@ -33,7 +33,6 @@ keystore.properties
 .DS_Store
 Thumbs.db
 *.log
-node_modules/
 
 # æœ¬åœ°æ„å»ºäº§ç‰© / ä¸´æ—¶æ–‡ä»¶
 web/
@@ -43,11 +42,10 @@ tools/_patch_*.py
 tests/_live_*.txt
 tests/_tts_sample.mp3
 
-# GitHub ÁîÅÆ£¨¾ø²»½ø²Ö¿â£©
+# GitHub ä»¤ç‰Œï¼ˆç»ä¸è¿›ä»“åº“ï¼‰
 .gh_token
 
-# ±¾»ú×Ô¶¯»¯½Å±¾£¨º¬¸öÈËĞÅÏ¢£¬²»½ø¹«¿ª²Ö¿â£©
+# æœ¬æœºè‡ªåŠ¨åŒ–è„šæœ¬ï¼ˆå«ä¸ªäººä¿¡æ¯ï¼Œä¸è¿›å…¬å¼€ä»“åº“ï¼‰
 tools/_*.py
 tools/_*.js
 tools/cdp.js
-.gh_token
