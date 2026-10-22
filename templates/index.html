@@ -12,6 +12,7 @@
 <link rel="icon" href="/icons/icon-192.png" type="image/png">
 <link rel="stylesheet" href="/static/css/app.css">
 <link rel="stylesheet" href="/static/css/polish.css">
+<link rel="stylesheet" href="/static/css/remote.css">
 </head>
 <body data-theme="light">
 
@@ -30,7 +31,7 @@
     <button id="mood-dot" class="mood-dot" aria-label="情感状态" title="情感状态"></button>
   </div>
   <div class="acts">
-    <button id="btn-wall" class="icon-btn" aria-label="换壁纸" title="换壁纸">
+    <button id="btn-wall" class="icon-btn" data-feature="wallpaper" aria-label="换壁纸" title="换壁纸">
       <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9.5" r="1.5" fill="currentColor"/><path d="M5.5 17l4.2-4.6 3 3.2 2.4-2.4 3.4 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <button id="btn-reset" class="icon-btn" aria-label="重置会话" title="重置会话">
@@ -44,7 +45,7 @@
 
 <main id="log" role="log" aria-live="polite" aria-label="对话"></main>
 
-<div id="update-bar" hidden>
+<div id="update-bar" data-feature="updateBar" hidden>
   <span class="ub-text">有新版本了</span>
   <button id="ub-update" class="ub-btn">现在更新</button>
   <button id="ub-skip" class="ub-x" aria-label="忽略这次">×</button>
@@ -166,12 +167,12 @@
       <label class="row" for="in-voice-vol"><span>音量 <b id="val-vol">100</b></span></label>
       <input id="in-voice-vol" type="range" min="0.6" max="1" step="0.01" value="1">
     </div>
-    <div class="drawer-item" style="--i:3">
+    <div class="drawer-item" style="--i:3" data-feature="voice">
       <label class="row" for="in-voice-auto"><span>情绪自动换音色</span></label>
       <button id="in-voice-auto" class="switch" role="switch" aria-checked="true" aria-label="情绪自动换音色"><i></i></button>
       <div id="voice-map-wrap" class="voice-map"></div>
     </div>
-    <div class="drawer-item" style="--i:4" id="voice-pick-row" hidden>
+    <div class="drawer-item" style="--i:4" id="voice-pick-row" data-feature="voice" hidden>
       <label class="row" for="in-voice-pick"><span>手机音色</span></label>
       <select id="in-voice-pick" class="txt"></select>
       <p class="hint">APK 里可以挑手机自带的更好听的音色（神经网络音色比默认的自然很多）。</p>
@@ -189,7 +190,7 @@
       <div class="swatches" id="accent-swatches"></div>
       <input id="in-accent" class="txt hex" type="text" maxlength="7" placeholder="#8CA6A0">
     </div>
-    <div class="drawer-item" style="--i:2">
+    <div class="drawer-item" style="--i:2" data-feature="wallpaper">
       <label class="row" for="in-mask"><span>壁纸蒙版 <b id="val-mask">70</b>%</span></label>
       <input id="in-mask" type="range" min="0" max="90" step="1" value="70">
       <div class="btn-row">
@@ -199,14 +200,19 @@
       </div>
     </div>
 
-    <div class="drawer-item" style="--i:3" id="icon-row" hidden>
+    <div class="drawer-item" style="--i:4" id="in-remote-cfg-row">
+      <label class="row" for="in-remote-cfg"><span>配置更新地址</span></label>
+      <input id="in-remote-cfg" class="txt" type="text" placeholder="留空＝用 GitHub raw">
+      <p class="hint">后台管理页改完设置后，手机靠这个地址拉最新配置。留空就用 GitHub 上的地址；填自己的服务器 / 隧道地址则秒级生效。</p>
+    </div>
+    <div class="drawer-item" style="--i:5" id="icon-row" data-feature="developerTools" hidden>
       <label class="row"><span>桌面图标</span></label>
       <div class="swatches" id="icon-swatches"></div>
       <p class="hint">点一下立即更换。部分手机需要回到桌面等一两秒。</p>
     </div>
 
     <h3 class="sec">天气</h3>
-    <div class="drawer-item" style="--i:0">
+    <div class="drawer-item" style="--i:0" data-feature="weather">
       <div class="wx-card" id="wx-card">
         <div class="wx-main"><span id="wx-city">未设置</span><span id="wx-temp"></span></div>
         <div class="wx-sub" id="wx-desc">打开天气卡片后才会查</div>
@@ -282,6 +288,7 @@
 <script src="/static/js/settings.js"></script>
 <script src="/static/js/expressions.js"></script>
 <script src="/static/js/updater.js"></script>
+<script src="/static/js/remote-config.js"></script>
 <script src="/static/js/mood.js"></script>
 <script src="/static/js/memory.js"></script>
 <script src="/static/js/chat.js"></script>

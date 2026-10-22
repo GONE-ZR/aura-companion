@@ -327,6 +327,14 @@ def api_reset():
     """后端无状态，这里只是给一个明确的确认端点；真正的清理由前端完成。"""
     return jsonify({"ok": True, "note": "stateless server: history lives on the client"})
 
+# ---------------------------------------------------------------- 后台管理
+try:
+    from admin.routes import register as register_admin
+    register_admin(app)
+except Exception as _adm_err:  # noqa: BLE001
+    logging.getLogger("aura").warning("admin routes not loaded: %s", _adm_err)
+
+
 
 # ---------------------------------------------------------------- 下载页（扫码装 APK）
 DOWNLOAD_DIR = BASE_DIR / "downloads"

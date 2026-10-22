@@ -1,0 +1,52 @@
+/* ============================================================
+   远程配置用的 CSS 钩子（后台管理页可实时改这些）
+   ============================================================ */
+
+:root {
+  --r-bubble: 18px;          /* 气泡圆角 */
+  --font-scale: 1;            /* 字号缩放 */
+  --wp-dim: 0;                /* 壁纸额外压暗 */
+  --paper: #f1efea;
+  --ink: #14140f;
+}
+
+/* 字号缩放：只放大正文与气泡，不动图标 */
+body {
+  font-size: calc(14px * var(--font-scale));
+}
+
+.msg.ai .bubble-text {
+  font-size: calc(15px * var(--font-scale));
+}
+
+.msg.me .bubble-text {
+  font-size: calc(14.5px * var(--font-scale));
+}
+
+/* 气泡圆角（远程可改） */
+.msg.ai .bubble {
+  border-radius: 2px var(--r-bubble) var(--r-bubble) var(--r-bubble);
+}
+
+.msg.me .bubble {
+  border-radius: var(--r-bubble) 2px var(--r-bubble) var(--r-bubble);
+}
+
+/* 关掉衬线 → 全站无衬线 */
+body.no-serif .msg.ai .bubble-text,
+body.no-serif .empty-text,
+body.no-serif #ai-name,
+body.no-serif .sheet-stage,
+body.no-serif #modal p {
+  font-family: var(--sans) !important;
+}
+
+/* 壁纸额外压暗（远程可改） */
+#wp-layer {
+  filter: brightness(calc(1 - var(--wp-dim) / 100));
+}
+
+/* 功能开关关掉时，直接不占位 */
+[data-feature-off="1"] {
+  display: none !important;
+}

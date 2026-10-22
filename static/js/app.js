@@ -606,6 +606,7 @@
     }
 
     /* 手机音色（只有 APK 的原生 TTS 插件存在时才显示） */
+    initRemoteCfgField();
     initVoicePicker();
 
     /* 11b. 更多 */
@@ -682,6 +683,11 @@
       try { window.Aura.updater.init(); } catch (e) { /* ignore */ }
     }
 
+    /* 15.7 远程配置（后台管理页保存 → 手机自动应用） */
+    if (window.Aura.remote && window.Aura.remote.init) {
+      try { window.Aura.remote.init(); } catch (e) { /* ignore */ }
+    }
+
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
       setTimeout(function () {
@@ -713,6 +719,19 @@
   }
 
   /* 手机音色选择（APK 专用：列出手机里所有 TTS 引擎的音色） */
+  /* 配置更新地址（远程配置的源） */
+  function initRemoteCfgField() {
+    var rc = $("in-remote-cfg");
+    if (!rc) return;
+    rc.value = S.getStr("aura_remote_cfg", "") || "";
+    rc.addEventListener("change", function () {
+      var v = (rc.value || "").trim();
+      S.setStr("aura_remote_cfg", v);
+      toast(v ? "配置地址已保存" : "已改回默认地址");
+      if (window.Aura.remote && window.Aura.remote.poll) window.Aura.remote.poll();
+    });
+  }
+
   function initVoicePicker() {
     var row = $("voice-pick-row");
     var sel = $("in-voice-pick");

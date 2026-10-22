@@ -261,12 +261,14 @@
     if (!body || document.getElementById("ft-sessions")) return;
 
     var sec = el("h3", "sec", "会话");
+    sec.setAttribute("data-feature", "multiSession");
     sec.id = "ft-sessions";
     var wrap = el("div", "ft-section");
     wrap.id = "ft-sessions-wrap";
 
     var search = el("div", "ft-search");
     searchInput = el("input", "txt");
+    searchInput.setAttribute("data-feature", "search");
     searchInput.type = "search";
     searchInput.placeholder = "搜索所有对话…";
     searchInput.addEventListener("input", function () { renderSearch(); });
@@ -288,9 +290,11 @@
     });
     row.appendChild(nb);
     var eb = el("button", "btn", "导出 Markdown");
+    eb.setAttribute("data-feature", "export");
     eb.addEventListener("click", exportMarkdown);
     row.appendChild(eb);
     var ej = el("button", "btn", "导出 JSON");
+    ej.setAttribute("data-feature", "export");
     ej.addEventListener("click", exportJson);
     row.appendChild(ej);
     wrap.appendChild(row);
@@ -458,34 +462,36 @@
   }
 
   /* ---------- 快捷短语条 ---------- */
+  function renderShortcutChips(wrap, list) {
+    wrap.textContent = "";
+    (list || []).forEach(function (item, i) {
+      var b = el("button", "ft-chip", item);
+      b.addEventListener("click", function () {
+        var inp = $("input");
+        if (!inp) return;
+        inp.value = item;
+        inp.dispatchEvent(new Event("input"));
+        inp.focus();
+      });
+      b.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+        var cur = shortcuts();
+        cur.splice(i, 1);
+        S.set(K_SHORTCUTS, cur);
+        renderShortcutChips(wrap, cur);
+      });
+      wrap.appendChild(b);
+    });
+  }
+
   function buildShortcuts() {
     var bar = document.getElementById("attach-row");
     var inputBar = document.getElementById("input-bar");
     if (!inputBar || document.getElementById("ft-shortcuts")) return;
     var wrap = el("div", "ft-shortcuts");
+    wrap.setAttribute("data-feature", "shortcuts");
     wrap.id = "ft-shortcuts";
-    function render() {
-      wrap.textContent = "";
-      shortcuts().forEach(function (s, i) {
-        var b = el("button", "ft-chip", s);
-        b.addEventListener("click", function () {
-          var inp = $("input");
-          if (!inp) return;
-          inp.value = s;
-          inp.dispatchEvent(new Event("input"));
-          inp.focus();
-        });
-        b.addEventListener("contextmenu", function (e) {
-          e.preventDefault();
-          var list = shortcuts();
-          list.splice(i, 1);
-          S.set(K_SHORTCUTS, list);
-          render();
-        });
-        wrap.appendChild(b);
-      });
-    }
-    render();
+    renderShortcutChips(wrap, shortcuts());
     /* 放在输入区上方 */
     inputBar.parentNode.insertBefore(wrap, inputBar);
   }
@@ -495,6 +501,7 @@
     var who = document.querySelector("#top .who");
     if (!who || document.getElementById("ft-face")) return;
     var b = el("button", "ft-face");
+    b.setAttribute("data-feature", "moodFace");
     b.id = "ft-face";
     b.title = "它现在的情绪";
     b.setAttribute("aria-label", "情绪状态");
@@ -526,6 +533,7 @@
     var note = document.getElementById("sheet-note");
     if (!note || document.getElementById("ft-face-note")) return;
     var box = el("div", "ft-face-note");
+    box.setAttribute("data-feature", "moodFace");
     box.id = "ft-face-note";
     note.parentNode.insertBefore(box, note.nextSibling);
     paintFaceNote();
@@ -630,6 +638,11 @@
   window.Aura.features.exportJson = exportJson;
   window.Aura.features.onSessionSwitch = function () { syncTitle(); renderSessions(); };
   window.Aura.features.copyText = copyText;
+  window.Aura.features.renderShortcuts = function () {
+    var wrap = document.getElementById('ft-shortcuts');
+    if (!wrap) return;
+    renderShortcutChips(wrap, shortcuts());
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

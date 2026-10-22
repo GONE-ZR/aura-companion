@@ -21,6 +21,7 @@ var PRECACHE = [
   "/static/css/app.css",
   "/static/css/polish.css",
   "/static/css/features.css",
+  "/static/css/remote.css",
   "/static/js/settings.js",
   "/static/js/expressions.js",
   "/static/js/updater.js",

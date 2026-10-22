@@ -290,13 +290,50 @@ def mode_lan():
     return 0
 
 
+def mode_admin():
+    """后台管理：起本地服务 + 打开管理页。
+    改完点「保存并下发」，手机端 30 秒内自动应用（电脑开着时同源秒级生效）。"""
+    hr("安静陪伴 · 后台管理")
+    ensure_deps()
+    ensure_env()
+
+    if http_ready(PORT):
+        print("  本地服务已经在跑（端口 %d），直接打开管理页。" % PORT)
+    else:
+        print("  正在启动本地服务…")
+        start_app("127.0.0.1")
+        if not wait_http(PORT):
+            print("  [!] 服务没起来，先单独运行一次 app.py 看看报错。")
+            return 1
+        print("  服务已就绪。")
+
+    url = "http://127.0.0.1:%d/admin" % PORT
+    print()
+    print("  管理页：%s" % url)
+    print("  默认密码：aura（可在 .env 里用 AURA_ADMIN_PASSWORD 修改）")
+    print()
+    print("  · 左边改设置，右边是手机外形的实时预览")
+    print("  · 点「保存并下发」→ 手机 30 秒内自动应用")
+    print("  · 想让电脑关机也能更新：在「发布通道」里贴 GitHub 令牌")
+    print()
+    try:
+        import webbrowser
+        webbrowser.open(url)
+    except Exception:
+        pass
+    print("  这个窗口可以关掉（服务会在后台继续跑）。")
+    return 0
+
+
 def main():
     mode = (sys.argv[1] if len(sys.argv) > 1 else "mobile").lower()
     if mode == "mobile":
         return mode_mobile()
     if mode == "lan":
         return mode_lan()
-    print("  用法：python tools/launch.py [mobile|lan]")
+    if mode == "admin":
+        return mode_admin()
+    print("  用法：python tools/launch.py [mobile|lan|admin]")
     return 2
 
 

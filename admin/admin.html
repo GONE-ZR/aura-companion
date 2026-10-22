@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>安静陪伴 · 后台管理</title>
+<style>
+  :root{
+    --paper:#f1efea; --paper2:#f7f5f1; --ink:#14140f; --dim:#6b665d;
+    --line:rgba(10,10,11,.14); --accent:#8CA6A0;
+    --serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong",Georgia,serif;
+    --sans:"HarmonyOS Sans SC","MiSans","PingFang SC","Microsoft YaHei UI","Noto Sans SC",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.7}
+  .wrap{display:grid;grid-template-columns:250px 1fr 420px;min-height:100vh}
+  .side{border-right:1px solid var(--line);padding:22px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+  .brand{font-family:var(--serif);font-size:19px;letter-spacing:.12em;margin-bottom:2px}
+  .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:22px}
+  .nav button{display:block;width:100%;text-align:left;border:0;background:none;font:inherit;font-size:13.5px;
+    padding:8px 10px;border-radius:4px;color:var(--ink);cursor:pointer}
+  .nav button:hover{background:rgba(10,10,11,.05)}
+  .nav button.on{background:var(--ink);color:var(--paper)}
+  .main{padding:26px 30px;overflow:auto}
+  .preview{border-left:1px solid var(--line);padding:22px;background:var(--paper2);position:sticky;top:0;height:100vh;overflow:auto}
+  .preview h4{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin:0 0 12px}
+  .phone{width:360px;height:720px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--paper);
+    box-shadow:0 18px 50px -30px rgba(0,0,0,.45)}
+  .phone iframe{width:100%;height:100%;border:0}
+  h2{font-family:var(--serif);font-size:24px;font-weight:400;letter-spacing:.06em;margin:0 0 4px}
+  .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:22px}
+  .sec{margin:0 0 26px}
+  .sec > h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+    border-bottom:1px solid var(--line);padding-bottom:7px;margin:0 0 12px}
+  .row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .row label{flex:0 0 132px;font-size:13px}
+  .row input[type=text],.row input[type=password],.row input[type=number],.row select,textarea{
+    flex:1;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:var(--paper2);color:var(--ink)}
+  textarea{min-height:92px;resize:vertical;font-family:var(--mono);font-size:12.5px;line-height:1.8}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap}
+  .sw{width:26px;height:26px;border-radius:3px;border:1px solid var(--line);cursor:pointer}
+  .sw.on{outline:2px solid var(--ink);outline-offset:2px}
+  .feat{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+  .feat label{display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);border-radius:4px;padding:7px 10px;cursor:pointer}
+  .feat input{accent-color:var(--ink)}
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:9px 15px;
+    border:1px solid var(--line);border-radius:4px;background:none;color:var(--ink);cursor:pointer}
+  .btn:hover{background:rgba(10,10,11,.05)}
+  .btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .btn.danger{border-color:#a05a52;color:#a05a52}
+  .bar{display:flex;gap:10px;align-items:center;margin-top:14px;padding-top:16px;border-top:1px solid var(--line)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+  .chip{border:1px solid var(--line);border-radius:3px;padding:4px 9px;font-family:var(--mono);font-size:11px;display:flex;gap:7px;align-items:center}
+  .chip b{font-weight:400;cursor:pointer;color:var(--dim)}
+  .msg{font-family:var(--mono);font-size:11px;letter-spacing:.06em;padding:8px 11px;border-radius:3px;margin-top:10px}
+  .msg.ok{background:rgba(110,150,120,.14);color:#3d6046}
+  .msg.err{background:rgba(170,90,80,.14);color:#8a3f38}
+  .login{max-width:360px;margin:16vh auto;text-align:center}
+  .login h1{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:.12em;margin:0 0 4px}
+  .login input{width:100%;font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);
+    border-radius:4px;background:var(--paper2);margin:16px 0 10px}
+  .hidden{display:none!important}
+  .danger-zone{border:1px solid rgba(170,90,80,.4);border-radius:4px;padding:14px}
+  .danger-zone h3{color:#8a3f38;border-color:rgba(170,90,80,.35)}
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login" class="login">
+  <h1>安静陪伴</h1>
+  <div class="kicker">后台管理</div>
+  <input id="pwd" type="password" placeholder="管理密码" autocomplete="current-password">
+  <button class="btn primary" id="btn-login" style="width:100%">进入</button>
+  <div id="login-msg" class="msg hidden"></div>
+  <p class="kicker" style="margin-top:18px;line-height:2">
+    密码在项目 .env 的 AURA_ADMIN_PASSWORD（默认 aura）<br>改完配置，手机 30 秒内自动生效
+  </p>
+</div>
+
+<!-- 主体 -->
+<div id="app" class="wrap hidden">
+  <aside class="side">
+    <div class="brand">安静陪伴</div>
+    <div class="kicker">后台管理</div>
+    <nav class="nav" id="nav">
+      <button data-tab="look" class="on">外观</button>
+      <button data-tab="feat">功能开关</button>
+      <button data-tab="text">文案</button>
+      <button data-tab="quick">快捷短语</button>
+      <button data-tab="icon">图标</button>
+      <button data-tab="pub">发布通道</button>
+      <button data-tab="dev">危险操作</button>
+    </nav>
+    <div style="margin-top:22px">
+      <div class="kicker">状态</div>
+      <div id="status" class="kicker" style="letter-spacing:.06em;text-transform:none;font-size:11.5px">—</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- 外观 -->
+    <section class="sec" data-pane="look">
+      <h2>外观</h2>
+      <div class="sub">theme · 颜色 / 明暗 / 圆角 / 字号 / 衬线 / 柔光</div>
+      <div class="row"><label>主题色</label><div class="swatches" id="swatches"></div>
+        <input id="f-accent" type="text" style="flex:0 0 120px"></div>
+      <div class="row"><label>明暗</label>
+        <select id="f-mode"><option value="auto">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
+      <div class="row"><label>气泡圆角</label><input id="f-radius" type="number" min="0" max="34" step="1"><span class="kicker">px</span></div>
+      <div class="row"><label>字号缩放</label><input id="f-fontScale" type="number" min="0.8" max="1.4" step="0.05"></div>
+      <div class="row"><label>柔光强度</label><input id="f-glow" type="number" min="0" max="20" step="1"></div>
+      <div class="row"><label>正文衬线</label><input id="f-serif" type="checkbox"></div>
+      <div class="row"><label>壁纸压暗</label><input id="f-wpdim" type="number" min="0" max="60" step="1"><span class="kicker">%</span></div>
+      <div class="row"><label>纸色</label><input id="f-paper" type="text"></div>
+      <div class="row"><label>墨色</label><input id="f-ink" type="text"></div>
+    </section>
+
+    <!-- 功能 -->
+    <section class="sec hidden" data-pane="feat">
+      <h2>功能开关</h2>
+      <div class="sub">features · 关掉的功能在手机上直接消失</div>
+      <div class="feat" id="featlist"></div>
+    </section>
+
+    <!-- 文案 -->
+    <section class="sec hidden" data-pane="text">
+      <h2>文案</h2>
+      <div class="sub">text · 空状态 / 输入框提示</div>
+      <div class="row"><label>空状态</label><input id="t-empty" type="text"></div>
+      <div class="row"><label>输入框提示</label><input id="t-placeholder" type="text"></div>
+      <div class="row"><label>提示语</label><input id="t-hint" type="text"></div>
+    </section>
+
+    <!-- 快捷短语 -->
+    <section class="sec hidden" data-pane="quick">
+      <h2>快捷短语</h2>
+      <div class="sub">shortcuts · 输入框上方那排按钮</div>
+      <div class="chips" id="chips"></div>
+      <div class="row"><label>新增</label><input id="q-text" type="text" placeholder="比如：今天好累">
+        <button class="btn" id="q-add">加入</button></div>
+    </section>
+
+    <!-- 图标 -->
+    <section class="sec hidden" data-pane="icon">
+      <h2>图标</h2>
+      <div class="sub">icon · 安卓桌面图标 / 应用内图标</div>
+      <div class="row"><label>桌面图标</label>
+        <select id="i-default">
+          <option value="AliasDefault">灰绿（默认）</option>
+          <option value="AliasWarm">暖灰</option>
+          <option value="AliasBlue">雾蓝</option>
+          <option value="AliasRose">藕粉</option>
+          <option value="AliasViolet">灰紫</option>
+        </select></div>
+      <div class="row"><label>应用内图标</label><input id="i-url" type="text" placeholder="图片地址（可上传后自动填）">
+        <button class="btn" id="i-up">上传</button>
+        <input type="file" id="i-file" accept="image/*" hidden></div>
+      <div id="i-prev" style="margin-top:10px;width:64px;height:64px;border:1px solid var(--line);border-radius:8px;
+        background:#ddd center/cover no-repeat"></div>
+    </section>
+
+    <!-- 发布通道 -->
+    <section class="sec hidden" data-pane="pub">
+      <h2>发布通道</h2>
+      <div class="sub">publish · 手机从哪拿配置</div>
+      <div class="row"><label>GitHub 令牌</label><input id="p-pat" type="password" placeholder="ghp_…（classic，需 repo 权限）">
+        <button class="btn" id="p-pat-save">保存</button></div>
+      <p class="kicker" style="text-transform:none;letter-spacing:.03em;line-height:2">
+        填了令牌 → 每次保存都会把配置推到 GitHub，<b>电脑关机手机也能收到更新</b>。<br>
+        令牌只写在本机 .env（已被 .gitignore 排除），不会进仓库。
+      </p>
+      <div class="row"><label>配置地址</label><input id="p-url" type="text" placeholder="留空＝用 GitHub raw">
+        <button class="btn" id="p-url-save">保存</button></div>
+      <p class="kicker" style="text-transform:none;letter-spacing:.03em;line-height:2">
+        这是手机端「设置 → 连接 → 配置更新地址」填的同一个地址。<br>
+        走隧道或自己的服务器时填它（形如 https://xxx.trycloudflare.com/remote/config.json），秒级生效。
+      </p>
+      <div class="row"><label>手机当前来源</label><span class="kicker" id="p-src" style="text-transform:none">—</span></div>
+    </section>
+
+    <!-- 危险操作 -->
+    <section class="sec hidden" data-pane="dev">
+      <h2>危险操作</h2>
+      <div class="sub">commands · 下发到手机执行</div>
+      <div class="danger-zone">
+        <h3 class="kicker" style="border-bottom:1px solid rgba(170,90,80,.35);padding-bottom:7px;margin:0 0 12px">这些会真的作用到手机上</h3>
+        <div class="row"><label>重置会话</label><button class="btn danger" data-cmd="reset_session">下发「重置会话」</button></div>
+        <div class="row"><label>清空数据</label><button class="btn danger" data-cmd="clear_all">下发「清空全部数据」</button></div>
+        <div class="row"><label>提醒一句</label><input id="cmd-toast" type="text" placeholder="想在手机上看到的话">
+          <button class="btn" id="cmd-toast-btn">下发</button></div>
+      </div>
+    </section>
+
+    <div class="bar">
+      <button class="btn primary" id="btn-save">保存并下发</button>
+      <button class="btn" id="btn-reset">恢复默认</button>
+      <span id="save-msg"></span>
+    </div>
+  </main>
+
+  <aside class="preview">
+    <h4>实时预览</h4>
+    <div class="phone"><iframe id="pv" src="/"></iframe></div>
+    <p class="kicker" style="margin-top:14px;line-height:2;text-transform:none;letter-spacing:.04em">
+      改左边的设置 → 右边立刻变。点「保存并下发」后手机 30 秒内自动应用。
+    </p>
+  </aside>
+</div>
+
+<script>
+const FEATURES = [
+  ["moodFace","情绪表情（顶栏的小脸）"],
+  ["multiSession","多会话"],
+  ["search","搜索历史"],
+  ["export","导出对话"],
+  ["shortcuts","快捷短语"],
+  ["wallpaper","壁纸"],
+  ["weather","天气"],
+  ["voice","朗读设置"],
+  ["emotionTint","情绪配色"],
+  ["updateBar","更新提示条"],
+  ["developerTools","换桌面图标"]
+];
+
+let cfg = null;
+
+async function api(path, body, method){
+  const opt = { method: method || (body ? "POST" : "GET"), credentials: "same-origin", headers: {"Content-Type":"application/json"} };
+  if (body) opt.body = JSON.stringify(body);
+  const r = await fetch(path, opt);
+  return await r.json();
+}
+
+function toast(msg, ok){
+  const el = document.getElementById("save-msg");
+  el.textContent = msg;
+  el.className = "msg " + (ok ? "ok" : "err");
+  setTimeout(()=>{ el.textContent=""; el.className="msg hidden"; }, 6000);
+}
+
+/* ---------- 登录 ---------- */
+document.getElementById("btn-login").onclick = async ()=>{
+  const pwd = document.getElementById("pwd").value;
+  const r = await api("/admin/api/login", {password: pwd});
+  if (r.ok){ document.getElementById("login").classList.add("hidden"); document.getElementById("app").classList.remove("hidden"); boot(); }
+  else { const m=document.getElementById("login-msg"); m.textContent = r.error||"登录失败"; m.className="msg err"; }
+};
+document.getElementById("pwd").addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("btn-login").click(); });
+
+/* ---------- 标签 ---------- */
+document.querySelectorAll("#nav button").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll("#nav button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    document.querySelectorAll("[data-pane]").forEach(p=>{
+      p.classList.toggle("hidden", p.getAttribute("data-pane")!==b.getAttribute("data-tab"));
+    });
+  };
+});
+
+/* ---------- 读取 + 渲染 ---------- */
+async function boot(){
+  const st = await api("/admin/api/status");
+  document.getElementById("status").innerHTML =
+    "配置版本 v" + (st.version||0) + "<br>更新于 " + (st.updated_at||"—") +
+    "<br>GitHub 推送：" + (st.has_github_token ? "可用 ✅" : "无令牌（只存本地）") +
+    (st.admin_password_is_default ? "<br>⚠️ 密码还是默认值" : "");
+
+  cfg = await api("/admin/api/config");
+  loadPub();
+  if (!cfg || cfg.error){ toast("读取配置失败：" + (cfg&&cfg.error), false); return; }
+  render(cfg);
+}
+
+function render(c){
+  const t = c.theme||{}, f = c.features||{}, x = c.text||{};
+  document.getElementById("f-accent").value = t.accent||"#8CA6A0";
+  document.getElementById("f-mode").value = t.mode||"auto";
+  document.getElementById("f-radius").value = t.radius==null?18:t.radius;
+  document.getElementById("f-fontScale").value = t.fontScale==null?1:t.fontScale;
+  document.getElementById("f-glow").value = t.glow==null?8:t.glow;
+  document.getElementById("f-serif").checked = t.serif!==false;
+  document.getElementById("f-wpdim").value = t.wallpaperDim||0;
+  document.getElementById("f-paper").value = t.paper||"#f1efea";
+  document.getElementById("f-ink").value = t.ink||"#14140f";
+  document.getElementById("t-empty").value = x.empty||"我在。";
+  document.getElementById("t-placeholder").value = x.placeholder||"说点什么…";
+  document.getElementById("t-hint").value = x.hint||"…";
+  document.getElementById("i-default").value = (c.icon||{}).default||"AliasDefault";
+  document.getElementById("i-url").value = (c.icon||{}).appIconUrl||"";
+  document.getElementById("i-prev").style.backgroundImage = (c.icon||{}).appIconUrl ? 'url("'+(c.icon||{}).appIconUrl+'")' : "";
+
+  // 色板
+  const sw = document.getElementById("swatches");
+  sw.innerHTML = "";
+  ["#8CA6A0","#90A4B0","#B0A79E","#C0A0A0","#9A9AB0","#14140f","#b5893f","#6f8f63"].forEach(h=>{
+    const b=document.createElement("button");
+    b.className="sw"+(h.toLowerCase()==String(t.accent||"").toLowerCase()?" on":"");
+    b.style.background=h; b.onclick=()=>{ document.getElementById("f-accent").value=h; collect(); };
+    sw.appendChild(b);
+  });
+
+  // 功能开关
+  const fl = document.getElementById("featlist");
+  fl.innerHTML="";
+  FEATURES.forEach(([k,label])=>{
+    const l=document.createElement("label");
+    const i=document.createElement("input"); i.type="checkbox"; i.checked = f[k]!==false;
+    i.onchange=collect;
+    l.appendChild(i); l.appendChild(document.createTextNode(label));
+    l.dataset.k=k; fl.appendChild(l);
+  });
+
+  // 短语
+  renderChips(c.shortcuts||[]);
+  preview();
+}
+
+function renderChips(list){
+  const box=document.getElementById("chips");
+  box.innerHTML="";
+  (list||[]).forEach((s,i)=>{
+    const d=document.createElement("span"); d.className="chip";
+    d.textContent=s;
+    const b=document.createElement("b"); b.textContent="×";
+    b.onclick=()=>{ const l=(cfg.shortcuts||[]).slice(); l.splice(i,1); cfg.shortcuts=l; renderChips(l); collect(); };
+    d.appendChild(b); box.appendChild(d);
+  });
+}
+
+document.getElementById("q-add").onclick = ()=>{
+  const v=document.getElementById("q-text").value.trim();
+  if(!v) return;
+  cfg.shortcuts = cfg.shortcuts||[];
+  cfg.shortcuts.push(v);
+  document.getElementById("q-text").value="";
+  renderChips(cfg.shortcuts); collect();
+};
+
+/* 数值读取：空 / 非数字时回落到安全默认值，绝不写成 0 */
+function numOr(id, dflt, isInt){
+  const raw = (document.getElementById(id) || {}).value;
+  const n = isInt ? parseInt(raw, 10) : parseFloat(raw);
+  return isNaN(n) ? dflt : n;
+}
+
+/* ---------- 收集表单 ---------- */
+function collect(){
+  const t=cfg.theme||{}, f=cfg.features||{}, x=cfg.text||{}, ic=cfg.icon||{};
+  t.accent=document.getElementById("f-accent").value.trim()||t.accent;
+  t.mode=document.getElementById("f-mode").value;
+  t.radius=numOr("f-radius", 18, true);
+  t.fontScale=numOr("f-fontScale", 1, false);
+  t.glow=numOr("f-glow", 8, true);
+  t.serif=document.getElementById("f-serif").checked;
+  t.wallpaperDim=numOr("f-wpdim", 0, true);
+  t.paper=document.getElementById("f-paper").value.trim();
+  t.ink=document.getElementById("f-ink").value.trim();
+  x.empty=document.getElementById("t-empty").value;
+  x.placeholder=document.getElementById("t-placeholder").value;
+  x.hint=document.getElementById("t-hint").value;
+  ic.default=document.getElementById("i-default").value;
+  ic.appIconUrl=document.getElementById("i-url").value.trim();
+  document.querySelectorAll("#featlist label").forEach(l=>{ f[l.dataset.k]=l.querySelector("input").checked; });
+  cfg.theme=t; cfg.features=f; cfg.text=x; cfg.icon=ic;
+  preview();
+}
+
+/* ---------- 实时预览 ---------- */
+function preview(){
+  const fr=document.getElementById("pv");
+  if (fr && fr.contentWindow){
+    try { fr.contentWindow.postMessage({type:"aura:preview", config: JSON.parse(JSON.stringify(cfg))}, "*"); } catch(e){}
+  }
+}
+
+/* ---------- 保存 ---------- */
+document.getElementById("btn-save").onclick = async ()=>{
+  collect();
+  const r = await api("/admin/api/config", {config: cfg});
+  if (r.ok){
+    toast("已保存并下发（v" + r.config.version + "）" +
+          (r.pushed && r.pushed.ok ? " · 已推到 GitHub，手机 30 秒内生效 ✅" : " · 只存本地（" + ((r.pushed&&r.pushed.reason)||"未推送") + "）"), true);
+    cfg = r.config;
+    boot();
+  } else {
+    toast("保存失败：" + (r.error||"未知错误"), false);
+  }
+};
+
+document.getElementById("btn-reset").onclick = async ()=>{
+  if(!confirm("恢复默认配置？")) return;
+  const r = await api("/admin/api/config", {config: {
+    version:0, theme:{accent:"#8CA6A0",mode:"auto",radius:18,fontScale:1,serif:true,glow:8,paper:"#f1efea",ink:"#14140f",wallpaperDim:0},
+    features:Object.fromEntries(FEATURES.map(([k])=>[k,true])),
+    text:{empty:"我在。",placeholder:"说点什么…",hint:"…"},
+    shortcuts:["我有点累","睡不着","今天还行","想安静待会儿"],
+    icon:{default:"AliasDefault",appIconUrl:""}, commands:[]
+  }});
+  if(r.ok){ cfg=r.config; render(cfg); toast("已恢复默认", true); }
+};
+
+/* ---------- 危险指令 ---------- */
+document.querySelectorAll("[data-cmd]").forEach(b=>{
+  b.onclick = async ()=>{
+    const type=b.getAttribute("data-cmd");
+    if(!confirm("确定要下发「"+type+"」到手机吗？")) return;
+    cfg.commands = cfg.commands||[];
+    cfg.commands.push({id:"c"+Date.now(), type:type, ts:Date.now()});
+    const r = await api("/admin/api/config", {config: cfg});
+    if(r.ok){ cfg=r.config; toast("已下发，手机 30 秒内执行", true); }
+    else toast("下发失败："+(r.error||""), false);
+  };
+});
+document.getElementById("cmd-toast-btn").onclick = async ()=>{
+  const text=document.getElementById("cmd-toast").value.trim();
+  if(!text) return;
+  cfg.commands = cfg.commands||[];
+  cfg.commands.push({id:"c"+Date.now(), type:"toast", text:text, ts:Date.now()});
+  const r = await api("/admin/api/config", {config: cfg});
+  if(r.ok){ cfg=r.config; toast("已下发", true); }
+};
+document.getElementById("cmd-toast").addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("cmd-toast-btn").click(); });
+
+/* ---------- 图标上传 ---------- */
+document.getElementById("i-up").onclick = ()=> document.getElementById("i-file").click();
+document.getElementById("i-file").onchange = async ()=>{
+  const f = document.getElementById("i-file").files[0];
+  if(!f) return;
+  const fd = new FormData(); fd.append("file", f);
+  const r = await fetch("/admin/api/icon", {method:"POST", body:fd, credentials:"same-origin"});
+  const j = await r.json();
+  if(j.ok){
+    document.getElementById("i-url").value = j.url;
+    document.getElementById("i-prev").style.backgroundImage='url("'+j.url+'")';
+    toast("已上传，保存后生效", true);
+    collect();
+  } else toast("上传失败："+(j.error||""), false);
+};
+</script>
+</body>
+</html>
