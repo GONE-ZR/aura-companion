@@ -10,6 +10,10 @@ const fs = require("fs");
 const path = require("path");
 const { URL } = require("url");
 
+/* 任何未捕获的异常 / Promise 都不许把 App 弄死（以前密钥窗口一报错，整个程序就退出了） */
+process.on("unhandledRejection", (e) => { console.error("[aura] unhandledRejection:", e); });
+process.on("uncaughtException", (e) => { console.error("[aura] uncaughtException:", e); });
+
 const ROOT = app.isPackaged
   ? path.join(process.resourcesPath, "aura")   /* 打包后：resources/aura/ */
   : path.resolve(__dirname, "..");             /* 开发时：项目根 */
@@ -41,11 +45,28 @@ function getApiKey() {
   const cfg = readConfig();
   if (cfg.encKey && safeStorage.isEncryptionAvailable()) {
     try {
-      return safeStorage.decryptString(Buffer.from(cfg.encKey, "base64"));
-    } catch (e) {
-      return "";
-    }
+      const k = safeStorage.decryptString(Buffer.from(cfg.encKey, "base64"));
+      if (k) return k;
+    } catch (e) { /* 解密失败就往下找兜底 */ }
   }
+  if (cfg.plainKey) return String(cfg.plainKey);
+  /* 兜底：项目 / 安装目录旁边有 .env（含 DEEPSEEK_API_KEY）就直接用，
+     这样桌面版不必再手动填一次 */
+  const fromEnv = (process.env.DEEPSEEK_API_KEY || "").trim() || envKeyFromDotEnv();
+  return fromEnv;
+}
+
+/** 从 ROOT/.env 里读 DEEPSEEK_API_KEY（桌面版常见情况：项目就在旁边） */
+function envKeyFromDotEnv() {
+  try {
+    const p = path.join(ROOT, ".env");
+    if (!fs.existsSync(p)) return "";
+    const txt = fs.readFileSync(p, "utf8");
+    for (const line of txt.split(/\r?\n/)) {
+      const m = line.match(/^\s*DEEPSEEK_API_KEY\s*=\s*(.+?)\s*$/);
+      if (m) return m[1].replace(/^["']|["']$/g, "");
+    }
+  } catch (e) { /* ignore */ }
   return "";
 }
 function setApiKey(plain) {
@@ -449,7 +470,15 @@ function askForKey(parent) {
       maximizable: false,
       title: "设置 API 密钥",
       backgroundColor: "#16191B",
-      webPreferences: { contextIsolation: true, nodeIntegration: false }
+      /* 用 preload 桥（keypreload.js）把 save/cancel 暴露给页面。
+         以前这里是 executeJavaScript 里调 require('electron')，
+         而页面关着 node 集成 → require 不存在 → 抛异常 → 主进程未捕获 → App 直接退出。 */
+      webPreferences: {
+        preload: path.join(__dirname, "keypreload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false
+      }
     });
     const html = `<!doctype html><html><head><meta charset="utf-8">
       <style>
@@ -471,24 +500,37 @@ function askForKey(parent) {
       <div class="row"><button id="c">取消</button><button id="s" class="p">保存</button></div>
       <script>
         const k=document.getElementById('k'), e=document.getElementById('e');
+        function say(t){ e.style.display='block'; e.textContent=t; }
         document.getElementById('s').onclick=()=>{
-          if(!k.value.trim()){e.style.display='block';e.textContent='密钥不能为空';return;}
-          window.__save(k.value.trim());
+          const v=(k.value||'').trim();
+          if(!v){ say('密钥不能为空'); return; }
+          if(!/^sk-/.test(v)){ say('DeepSeek 的密钥以 sk- 开头，检查一下'); return; }
+          if(!window.__aura){ say('保存通道没准备好，请关掉重开一次'); return; }
+          window.__aura.save(v);
+          say('正在保存…');
         };
-        document.getElementById('c').onclick=()=>window.__cancel();
+        document.getElementById('c').onclick=()=>window.__aura && window.__aura.cancel();
         k.addEventListener('keydown',ev=>{if(ev.key==='Enter')document.getElementById('s').click();});
+        if(window.__aura) window.__aura.ready();
       </script></body></html>`;
     w.setMenuBarVisibility(false);
     w.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
-    w.webContents.on("did-finish-load", () => {
-      w.webContents.executeJavaScript(
-        "window.__save=(v)=>{require('electron').ipcRenderer.send('key:save',v);};" +
-        "window.__cancel=()=>{require('electron').ipcRenderer.send('key:cancel');};"
-      );
-    });
-    ipcMain.once("key:save", (_e, v) => { setApiKey(v); w.close(); resolve(true); });
-    ipcMain.once("key:cancel", () => { w.close(); resolve(false); });
-    w.on("closed", () => resolve(false));
+
+    /* 一次性监听；关窗口时把没触发的监听清掉，避免下次误触发 */
+    const onSave = (_e, v) => {
+      cleanup();
+      try { setApiKey(String(v || "").trim()); } catch (err) { /* 存不下也要放行 */ }
+      try { w.close(); } catch (err) { }
+      resolve(true);
+    };
+    const onCancel = () => { cleanup(); try { w.close(); } catch (err) { } resolve(false); };
+    const cleanup = () => {
+      ipcMain.removeListener("key:save", onSave);
+      ipcMain.removeListener("key:cancel", onCancel);
+    };
+    ipcMain.on("key:save", onSave);
+    ipcMain.on("key:cancel", onCancel);
+    w.on("closed", () => { cleanup(); resolve(false); });
   });
 }
 
@@ -532,9 +574,14 @@ if (!app.requestSingleInstanceLock()) {
     await startServer();
 
     if (!getApiKey()) {
-      await askForKey(null);
+      /* 先建主窗口再问密钥 —— 万一密钥窗口有问题，也不至于"进不去" */
+      createWindow();
+      askForKey(win).then((ok) => {
+        if (ok && win && !win.isDestroyed()) win.reload();
+      });
+    } else {
+      createWindow();
     }
-    createWindow();
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

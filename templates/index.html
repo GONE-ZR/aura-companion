@@ -202,6 +202,23 @@
       </div>
     </div>
 
+    <!-- 柔和流动主题（新增） -->
+    <div class="drawer-item" style="--i:3">
+      <label class="row"><span>柔和流动风格</span></label>
+      <button id="in-soft" class="switch" role="switch" aria-checked="true" aria-label="柔和流动风格"><i></i></button>
+      <p class="hint">把气泡和输入栏换成渐变玻璃质感。关掉就回到原来的暖纸极简风。</p>
+    </div>
+    <div class="drawer-item" style="--i:3b" id="in-soft-palette-row">
+      <label class="row" for="in-soft-palette"><span>配色预设</span></label>
+      <select id="in-soft-palette" class="txt">
+        <option value="auto">跟随主题色（推荐）</option>
+        <option value="violet">紫 · 梦幻</option>
+        <option value="mint">薄荷 · 清爽</option>
+        <option value="amber">暖橙 · 温暖</option>
+      </select>
+      <p class="hint">选预设会直接改主色；开启「情绪配色」时，情绪变化会覆盖它（情绪色优先）。</p>
+    </div>
+
     <div class="drawer-item" style="--i:4" id="in-remote-cfg-row">
       <label class="row" for="in-remote-cfg"><span>配置更新地址</span></label>
       <input id="in-remote-cfg" class="txt" type="text" placeholder="留空＝用 GitHub raw">

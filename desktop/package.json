@@ -1,6 +1,6 @@
 {
   "name": "aura-companion",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "安静的陪伴 —— 个人情感陪伴应用（桌面版）",
   "main": "main.js",
   "author": "aura",
@@ -25,6 +25,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "keypreload.js",
       "build/**/*",
       "!**/*.map"
     ],
