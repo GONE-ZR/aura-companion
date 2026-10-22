@@ -251,11 +251,12 @@ def build():
     bullet(doc, "已经装好的 App 也会自己发现更新：顶部会出现一条「有新版 vX.X.X · 下载新版」，"
                 "点一下就下载新安装包。")
     bullet(doc, "下载地址（永久有效，不用记）：")
-    para(doc, "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk",
+    para(doc, "https://gone-zr.github.io/aura-companion/downloads/aura-companion.apk", size=9)
+    bullet(doc, "备用加速地址（第一个打不开时用这个）：")
+    para(doc, "https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk",
          size=9)
     bullet(doc, "版本清单（App 就是读它来判断有没有新版）：")
-    para(doc, "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json",
-         size=9)
+    para(doc, "https://gone-zr.github.io/aura-companion/downloads/latest.json", size=9)
     bullet(doc, "换手机 / 重装系统，扫这张码就能重新下。")
 
     h2(doc, "两种连接方式的区别")
