@@ -240,6 +240,19 @@
   function settleEngine() {
     var st = engineState();
     if (!st) return null;
+    /* 第五篇 §2：今天的生活线先落盘，情绪原因再从这里读 */
+    try {
+      if (window.AuraLife) {
+        window.AuraLife.ensureToday(new Date());
+        /* 状态与原因都取落盘的生活线（不临场编） */
+        if (st.patience < 60 && (st.state === "calm" || st.state === "soft")) {
+          var ls = window.AuraLife.stateFor();
+          var lc = window.AuraLife.causeFor();
+          if (ls) st.state = ls;
+          if (lc) st.cause = lc;
+        }
+      }
+    } catch (e) { /* ignore */ }
     try {
       window.AuraEngine.settle(st, Date.now());
       window.AuraEngine.checkNoReply(st, Date.now());
@@ -277,6 +290,17 @@
           lastGap: lastGapMs(),
           summary: (window.Aura.memory && window.Aura.memory.summaryText && window.Aura.memory.summaryText()) || "",
           emergency: (cfg && cfg.emergency) || "",
+          resumeHint: (function () {
+            try {
+              if (!window.AuraOpenLoop) return "";
+              var plan = window.AuraOpenLoop.plan(userText, Date.now());
+              if (plan.mode === "none" || plan.mode === "fresh" || plan.mode === "abandon") return "";
+              /* 只给"接话头"或"轻提一句"，不让她复述历史 */
+              return plan.mode === "light"
+                ? "他隔了几天才回来。可以轻提一句「" + plan.topic + "」，不追问。"
+                : "接着「" + plan.topic + "」往下聊，不要复述之前说过的话。";
+            } catch (e) { return ""; }
+          })(),
           hotline: (cfg && cfg.hotline) || ""
         });
       }
@@ -344,20 +368,21 @@
   /* 连续 fallback 计数（第四篇 §8：连续 3 轮后设置页出现"当前使用备用线路"） */
   var fallbackStreak = 0;
 
-  function directRequest(payload, useFallback) {
+  function directRequest(payload, useFallback, signal) {
     return fetch(DS_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + cfg.apiKey
       },
-      body: JSON.stringify(buildDirectPayload(payload, useFallback))
+      body: JSON.stringify(buildDirectPayload(payload, useFallback)),
+      signal: signal
     });
   }
 
   /* 失败重试 + 静默切备用（§8）：不弹窗、不改用户的选择、不降级 prompt */
-  function requestWithFallback(payload) {
-    var one = function (fallback) { return directRequest(payload, fallback); };
+  function requestWithFallback(payload, signal) {
+    var one = function (fallback) { return directRequest(payload, fallback, signal); };
     return one(false).then(function (res) {
       if (res.ok) return res;
       return new Promise(function (ok) { setTimeout(ok, 800); })
@@ -528,7 +553,8 @@
         window.AuraEngine.onUserMessage(st, userText, {
           sheWasSerious: view.state === "serious" || view.state === "blank",
           now: Date.now(),
-          messageId: meMsg ? meMsg.id : null
+          messageId: meMsg ? meMsg.id : null,
+          lifeEvents: window.AuraLife ? window.AuraLife.today() : null
         });
         window.AuraEngine.maybeSulky(st, userText, { now: Date.now() });
         saveEngine();
@@ -586,12 +612,25 @@
     }, thinkDelay(userText));
   }
 
+  var activeController = null;
+
+  /* 第二篇 §3.5：流式中常驻停止按钮；点击**保留已输出内容** */
+  function stopStreaming() {
+    if (activeController) {
+      try { activeController.abort(); } catch (e) { /* ignore */ }
+      activeController = null;
+      setBusy(false);
+      toast("停了");
+    }
+  }
+
   function streamReply(meMsg, meNode, aiMsg, node, body, bubble, think, dots, userText, images, emo) {
     var payload = buildPayload(userText, images);
     var controller = ("AbortController" in window) ? new AbortController() : null;
+    activeController = controller;
 
     var req = isDirect()
-      ? requestWithFallback(payload).then(function (res) {
+      ? requestWithFallback(payload, controller ? controller.signal : undefined).then(function (res) {
           /* 直连模式没有本地服务器做图片块转换，这里自己补一次 */
           return res;
         })
@@ -754,10 +793,21 @@
           bubble.setAttribute("data-face", window.Aura.expr.faceFor(emo.type, emo.intensity));
         } catch (e) { /* ignore */ }
       }
+      activeController = null;
       messages.push(aiMsg);
       window.Aura.messages.save(messages);
       try { if (window.AuraOffline) window.AuraOffline.noteOnline(); } catch (e) { }
       /* §九：每 7 轮抽一次记忆（后台跑，不阻塞） */
+      /* 第五篇 §4：话题开合（本地启发式，异步判定不占主对话） */
+      try {
+        if (window.AuraOpenLoop) {
+          if (window.AuraOpenLoop.looksOpen(userText)) window.AuraOpenLoop.open(userText);
+          else if (/解决了|好了|过了|定下来了|结束了/.test(userText)) {
+            var lp = window.AuraOpenLoop.latest();
+            if (lp) window.AuraOpenLoop.close(lp.id);
+          }
+        }
+      } catch (e) { /* ignore */ }
       try { recordTurn(); } catch (e) { /* ignore */ }
       try { maybeQuickReplies(text); } catch (e) { /* ignore */ }
       scrollToEnd(false);
@@ -867,9 +917,13 @@
   }
 
   /* ---------------- 键盘（19.1） ---------------- */
+  var composing = false;
+
   function onKeyDown(e) {
     if (!input) return;
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+    /* 输入法兼容（第六篇 §8）：拼音还没上屏时回车是选词，不是发送 */
+    if (e.isComposing || composing || e.keyCode === 229) return;
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
     }
@@ -1034,7 +1088,21 @@
     });
   }
 
+  /* 第五篇 §10 / 第六篇 §10：长按发送键 → 她说最近一个未闭合话题 */
+  function recallLast() {
+    if (!window.AuraOpenLoop) return;
+    if (input && input.value.trim()) return;      /* 输入框有内容就不抢 */
+    var line = window.AuraOpenLoop.recall();
+    var aiMsg = { id: nowId(), role: "ai", content: line, ts: Date.now(), bubbleCount: 1 };
+    messages.push(aiMsg);
+    appendMessage(aiMsg, false);
+    window.Aura.messages.save(messages);
+    scrollToEnd(true);
+  }
+
   window.Aura.chat = {
+    recallLast: recallLast,
+    stopStreaming: stopStreaming,
     /* 任务书 §四/§七：给 app.js 用的引擎入口 */
     engineState: engineState,
     settleEngine: settleEngine,
@@ -1069,6 +1137,9 @@
       if (input) {
         input.addEventListener("input", autoGrow);
         input.addEventListener("keydown", onKeyDown);
+    /* 输入法合成态（中文候选栏弹出/收起时，气泡区不跳、不误发） */
+    input.addEventListener("compositionstart", function () { composing = true; });
+    input.addEventListener("compositionend", function () { composing = false; });
       }
       if (sendBtn) sendBtn.addEventListener("click", send);
 

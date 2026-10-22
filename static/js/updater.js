@@ -9,7 +9,7 @@
   if (!A) return;
 
   /* 当前版本 —— 每次发版记得改这里 */
-  var CURRENT = "1.0.12";
+  var CURRENT = "1.0.13";
 
   /* 清单地址：国内直连 raw 是被墙的，所以优先用加速通道。
      gh-proxy.com（实测 1.1 秒）→ GitHub Pages（自己的域名）→ raw（备用） */

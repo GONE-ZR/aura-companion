@@ -680,6 +680,18 @@
       });
     }
 
+    /* 停止生成：忙时显示，闲时隐藏（第二篇 §3.5） */
+    var stopBtn = $("btn-stop");
+    if (stopBtn) {
+      stopBtn.addEventListener("click", function () {
+        if (window.Aura.chat && window.Aura.chat.stopStreaming) window.Aura.chat.stopStreaming();
+      });
+      var syncStop = function () {
+        stopBtn.hidden = !(window.Aura.chat && window.Aura.chat.isBusy && window.Aura.chat.isBusy());
+      };
+      setInterval(syncStop, 400);
+    }
+
     var cu = $("btn-check-update");
     if (cu) cu.addEventListener("click", function () {
       if (!REG) {

@@ -117,8 +117,35 @@
   }
 
   /* ---------------- 生命侧驱动（不是用户造成的） ----------------
-     返回 { state, cause } —— 只在 calm 且 patience 不高时生效 */
-  function lifeState(now, seed) {
+     第五篇 §2：**优先读落盘的 LifeEvent**，读不到才用时段规则兜底。
+     这保证"今天为什么累"是可追溯的具体事件，而不是每轮现编。 */
+  function lifeFromEvents(ev) {
+    if (!ev || !ev.length) return null;
+    var kinds = ev.map(function (e) { return e.kind; });
+    var state = "calm";
+    if (kinds.indexOf("sleepless") !== -1 || kinds.indexOf("work") !== -1 || kinds.indexOf("traffic") !== -1) state = "tired";
+    else if (kinds.indexOf("mishap") !== -1) state = "low";
+    else if (kinds.indexOf("hobby") !== -1 || kinds.indexOf("rest") !== -1) state = "soft";
+    var main = ev.filter(function (e) { return e.kind !== "social" && e.kind !== "rest"; })[0] || ev[0];
+    return {
+      state: state,
+      cause: { type: main.kind, detail: main.text, source: "life", at: main.createdAt, lifeEventId: main.id }
+    };
+  }
+
+  function lifeState(now, seed, lifeEvents) {
+    /* ① 落盘的生活线（第五篇要求的主路径） */
+    var fromStore = lifeFromEvents(lifeEvents);
+    if (fromStore) return fromStore;
+    if (typeof window !== "undefined" && window.AuraLife) {
+      try {
+        var ev = window.AuraLife.today(now);
+        var r0 = lifeFromEvents(ev);
+        if (r0) return r0;
+      } catch (e) { /* ignore */ }
+    }
+
+    /* ② 兜底：时段规则（生活线还没生成时） */
     var d = new Date(now || Date.now());
     var h = d.getHours();
     var dow = d.getDay();                      // 0 周日
@@ -283,7 +310,7 @@
       /* 保持小脾气 */
     } else {
       // 回到生命侧驱动
-      var life = lifeState(now, opts.seed);
+      var life = lifeState(now, opts.seed, opts.lifeEvents);
       st.state = life.state;
       if (!st.cause || st.cause.source !== "user") st.cause = life.cause;
     }
@@ -392,7 +419,7 @@
   return {
     D: D, STATES: STATES, STATE_WORD: STATE_WORD,
     clamp: clamp, performance: performance, buildAttribution: buildAttribution,
-    judgeUserMessage: judgeUserMessage, lifeState: lifeState,
+    judgeUserMessage: judgeUserMessage, lifeState: lifeState, lifeFromEvents: lifeFromEvents,
     createState: createState, settle: settle, onUserMessage: onUserMessage,
     maybeSulky: maybeSulky, checkNoReply: checkNoReply,
     publicView: publicView, meaningFor: meaningFor, expressionFor: expressionFor,

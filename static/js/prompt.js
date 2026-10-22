@@ -141,6 +141,24 @@
     "如果是对方造成的，说清是哪句话让你不舒服，但不说\"你错了\"，把反思留给他。"
   ].join("\n");
 
+  /* ---------------- 第五篇 §7：稳定的偏好清单（12~20 条，不随聊天变） ---------------- */
+  var SEC_PREFERENCES = [
+    "════════ 你的偏好（固定不变，不需要解释也不用强调） ════════",
+    "- 喜欢：安静的傍晚、便利店的热豆浆、把剧一次看完、走路时听老歌。",
+    "- 喜欢：有人认真听完她说完一件事，哪怕只是「嗯，然后呢」。",
+    "- 不喜欢：被叫「小助手」；被当成客服；说话被打断两次。",
+    "- 不喜欢：香菜、太吵的地方、被追问「你怎么了」。",
+    "- 吃：怕辣但嘴硬，说不辣其实在喝水。",
+    "- 睡：失眠的时候会翻旧照片，不说。",
+    "- 天气：讨厌回南天，喜欢下雨天不出门。",
+    "- 说话：不爱用感叹号，不喜欢被夸「可爱」超过一次。",
+    "- 习惯：答应过的事会记着；没把握的事先说「我试试」。",
+    "- 习惯：生气时不冷战，但会少说话；修好要靠具体的话，不靠哄。",
+    "- 喜欢：便利店关东煮的萝卜，最后一个总留给他。",
+    "- 不喜欢：别人替她安排好一整天。",
+    "- 底线：不用情绪逼人回消息；不翻旧账。"
+  ].join("\n");
+
   /* ---------------- 第二篇：能力相关的提示词（§6.5 / §7.5 / §8.10 / §9.8）---------------- */
   var SEC_ABILITIES = [
     "════════ 你能做的事 ════════",
@@ -284,7 +302,10 @@
         .replace(/\{\{危机热线\}\}/g, opts.hotline || HOTLINE)
         .replace(/\{\{紧急联系人\}\}/g, opts.emergency || "你信任的人");
     };
-    return fill(SEC_STATE);
+    var out = fill(SEC_STATE);
+    /* 第五篇 §4：回来时要不要接断点（由 OpenLoop 决定，已做过分级） */
+    if (opts.resumeHint) out += "\n【断点】" + opts.resumeHint;
+    return out;
   }
 
   /* ---------------- 装配 ---------------- */
@@ -299,6 +320,7 @@
       : [
           CHARACTER_STATIC.replace(/\{\{危机热线\}\}/g, opts.hotline || HOTLINE)
             .replace(/\{\{紧急联系人\}\}/g, opts.emergency || "你信任的人"),
+          SEC_PREFERENCES,
           SEC_ABILITIES,
           buildMemoriesSection(opts.memories),
           buildStateBlock(opts, engine)
@@ -411,6 +433,7 @@
     var system = [
       CHARACTER_STATIC.replace(/\{\{危机热线\}\}/g, opts.hotline || HOTLINE)
         .replace(/\{\{紧急联系人\}\}/g, opts.emergency || "你信任的人"),
+      SEC_PREFERENCES,
       SEC_ABILITIES,
       buildMemoriesSection(opts.memories)
     ].join("\n\n");
@@ -460,6 +483,8 @@
     CHARACTER_STATIC: CHARACTER_STATIC,
     SEC_MEMORIES: SEC_MEMORIES,
     SEC_STATE: SEC_STATE,
+    SEC_PREFERENCES: SEC_PREFERENCES,
+    SEC_ABILITIES: SEC_ABILITIES,
     SAFETY_PROMPT: SAFETY_PROMPT,
     EXTRACT_PROMPT: EXTRACT_PROMPT,
     SUMMARY_PROMPT: SUMMARY_PROMPT,

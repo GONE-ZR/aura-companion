@@ -32,6 +32,35 @@
     try { return localStorage.getItem(KEY) === "1"; } catch (e) { return true; }
   }
 
+
+  /* 她先说三句（第五篇 §8：不得包含提问） */
+  function herLines() {
+    var st = (window.Aura.chat && window.Aura.chat.engineState && window.Aura.chat.engineState()) || null;
+    var state = (st && st.state) || "calm";
+    var h = new Date().getHours();
+    var period = h < 6 ? "night" : h < 10 ? "morning" : h < 18 ? "day" : h < 23 ? "evening" : "night";
+
+    var byState = {
+      tired: ["今天有点累。", "不太想多说。", "你来了就坐着吧。"],
+      low: ["今天提不起劲。", "不是冲你。", "就这样待会儿也行。"],
+      sulky: ["哦。", "你来了。", "随你吧。"],
+      serious: ["我还在想那件事。", "不太想笑。", "先这样。"],
+      blank: ["嗯。", "你好。", "有事说事。"],
+      soft: ["今天还行。", "刚从外面回来。", "屋里有股暖气味。"],
+      calm: ["来了。", "刚忙完。", "坐吧。"]
+    };
+    var byPeriod = {
+      morning: ["早上有点冷。", "刚醒没多久。", "窗还没开。"],
+      day: ["中午随便吃了点。", "外面挺吵。", "刚歇下来。"],
+      evening: ["天黑了。", "路上堵了会儿。", "刚到家。"],
+      night: ["这么晚还没睡。", "我也没睡。", "灯留着。"]
+    };
+    var lines = (byState[state] || byState.calm).slice();
+    lines[2] = (byPeriod[period] || byPeriod.day)[1];
+    /* 硬性：三句都不许以问号结尾 */
+    return lines.map(function (t) { return t.replace(/[?？]+$/, "。"); });
+  }
+
   /* ---------------- 界面 ---------------- */
   function start(opts) {
     opts = opts || {};
@@ -61,7 +90,7 @@
 
       /* 进度 */
       var dots = el("div", "display:flex;gap:6px;margin-bottom:auto");
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < 5; i++) {
         dots.appendChild(el("span", "width:" + (i === step ? "18px" : "6px") +
           ";height:6px;border-radius:3px;background:" + (i === step ? "var(--ink,#14140f)" : "rgba(0,0,0,.18)") +
           ";transition:width .3s ease"));
@@ -100,7 +129,37 @@
         box.appendChild(el("div", "font-size:12px;color:var(--dim,#6b665d);text-align:center", "这四屏随时可以在设置里重新查看"));
       }
 
+      /* 第五篇 §8：她先开口说三句（不含提问），用户可以直接打字进对话 */
       if (step === 1) {
+        herLines().forEach(function (line) {
+          var b = el("div", "font-family:var(--serif,serif);font-size:17px;line-height:1.9;" +
+            "padding:12px 16px;border-radius:16px;background:rgba(255,255,255,.55);" +
+            "border:1px solid rgba(0,0,0,.08);max-width:86%", line);
+          box.appendChild(b);
+        });
+        var tip = el("p", "font-size:12.5px;color:var(--dim,#6b665d);margin:6px 0 0;line-height:1.8",
+          "想说话就直接打，下面几步随时能补。");
+        box.appendChild(tip);
+
+        var rin = document.createElement("input");
+        rin.type = "text";
+        rin.placeholder = "说点什么…";
+        rin.style.cssText = "padding:13px 14px;border-radius:12px;border:1px solid rgba(0,0,0,.16);" +
+          "background:transparent;color:inherit;font-size:16px;font-family:inherit;margin-top:6px";
+        rin.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter" && rin.value.trim()) {
+            var txt = rin.value.trim();
+            finish({ adult: true, name: data.name, sleep: data.sleep, emergency: data.emergency, firstText: txt });
+          }
+        });
+        box.appendChild(rin);
+
+        var rrow = el("div", "display:flex;gap:10px;margin-top:6px");
+        rrow.appendChild(mkBtn("继续", true, function () { step = 2; render(); }));
+        box.appendChild(rrow);
+      }
+
+      if (step === 2) {
         box.appendChild(el("h1", "font-family:var(--serif,serif);font-size:24px;font-weight:400;margin:0", "怎么称呼你"));
         box.appendChild(el("p", "font-size:13.5px;color:var(--dim,#6b665d);margin:0;line-height:1.8", "她叫你的时候用。不填就叫「你」。"));
         var inp = document.createElement("input");
@@ -113,14 +172,14 @@
         box.appendChild(inp);
 
         var row = el("div", "display:flex;gap:10px;margin-top:6px");
-        var next = mkBtn("继续", true, function () { step = 2; render(); });
-        var skip = mkBtn("先不填", false, function () { data.name = ""; step = 2; render(); });
+        var next = mkBtn("继续", true, function () { step = 3; render(); });
+        var skip = mkBtn("先不填", false, function () { data.name = ""; step = 3; render(); });
         row.appendChild(skip);
         row.appendChild(next);
         box.appendChild(row);
       }
 
-      if (step === 2) {
+      if (step === 3) {
         box.appendChild(el("h1", "font-family:var(--serif,serif);font-size:24px;font-weight:400;margin:0", "你的作息"));
         box.appendChild(el("p", "font-size:13.5px;color:var(--dim,#6b665d);margin:0;line-height:1.8",
           "只影响她什么时候找你说话。随时能改。"));
@@ -135,12 +194,12 @@
         });
         box.appendChild(group);
         var row2 = el("div", "display:flex;gap:10px;margin-top:6px");
-        row2.appendChild(mkBtn("稍后再说", false, function () { step = 3; render(); }));
-        row2.appendChild(mkBtn("继续", true, function () { step = 3; render(); }));
+        row2.appendChild(mkBtn("稍后再说", false, function () { step = 4; render(); }));
+        row2.appendChild(mkBtn("继续", true, function () { step = 4; render(); }));
         box.appendChild(row2);
       }
 
-      if (step === 3) {
+      if (step === 4) {
         box.appendChild(el("h1", "font-family:var(--serif,serif);font-size:24px;font-weight:400;margin:0", "紧急联系人"));
         box.appendChild(el("p", "font-size:13.5px;color:var(--dim,#6b665d);margin:0;line-height:1.9",
           "可填可不填。只在你出现危险信号时，她才会建议你去联系这个人。只存在本机。"));
@@ -159,7 +218,7 @@
       }
 
       page.appendChild(box);
-      page.appendChild(el("div", "font-size:11px;color:var(--dim,#6b665d);text-align:center;margin-top:auto", "第 " + (step + 1) + " / 4 屏"));
+      page.appendChild(el("div", "font-size:11px;color:var(--dim,#6b665d);text-align:center;margin-top:auto", "第 " + (step + 1) + " / 5 屏"));
     }
 
     function mkBtn(text, primary, onClick) {

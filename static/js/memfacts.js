@@ -65,7 +65,11 @@
       when: String(item.when || "").slice(0, 20),
       confidence: normConfidence(item.confidence),
       status: item.status === "deleted" ? "deleted" : "active",
-      createdAt: item.createdAt || Date.now()
+      createdAt: item.createdAt || Date.now(),
+      /* 第五篇 §6：用户纠正过就留痕；被纠正两次直接删 */
+      correctedAt: item.correctedAt || null,
+      corrections: item.corrections || 0,
+      mutedTurns: item.mutedTurns || 0
     };
   }
 
@@ -121,6 +125,52 @@
     return list;
   }
 
+
+  /* ---------------- 用户纠正（第五篇 §6） ----------------
+     mode: 'deny'（否认：这事没发生过） | 'fix'（更正：改成对的）
+     · 否认 → 直接标记 deleted，永不复活
+     · 更正 → 更新 fact / when，留下 correctedAt
+     · 同一条被纠正两次 → 直接删除
+     · 纠正后 10 轮内不再进入上下文
+  */
+  function correct(id, patch, opts) {
+    opts = opts || {};
+    var list = opts.list || load();
+    var hit = null;
+    list.forEach(function (x) { if (x.id === id) hit = x; });
+    if (!hit) return { list: list, item: null, action: "not_found" };
+
+    patch = patch || {};
+    hit.correctedAt = Date.now();
+    hit.corrections = (hit.corrections || 0) + 1;
+
+    if (patch.mode === "deny" || hit.corrections >= 2) {
+      hit.status = "deleted";
+      hit.deletedAt = Date.now();
+      save(list);
+      return { list: list, item: hit, action: "deleted" };
+    }
+
+    if (patch.fact) hit.fact = String(patch.fact).trim().slice(0, 60);
+    if (patch.when !== undefined) hit.when = String(patch.when || "").slice(0, 20);
+    if (patch.type) hit.type = normType(patch.type);
+    /* 置信度：用户亲口更正的，记 0.9 */
+    hit.confidence = 0.9;
+    hit.mutedTurns = 10;
+    save(list);
+    return { list: list, item: hit, action: "fixed" };
+  }
+
+  /* 检索时递减静默轮数（纠正后 10 轮不出现） */
+  function tickMuted(opts) {
+    opts = opts || {};
+    var list = opts.list || load();
+    var changed = false;
+    list.forEach(function (m) { if (m.mutedTurns > 0) { m.mutedTurns -= 1; changed = true; } });
+    if (changed) save(list);
+    return list;
+  }
+
   /* ---------------- 检索（top-8，相关度 + 时间） ---------------- */
   function tokens(s) {
     var t = String(s || "");
@@ -139,7 +189,7 @@
     opts = opts || {};
     var limit = opts.limit || 8;
     var now = opts.now || Date.now();
-    var list = (opts.list || load()).filter(function (m) { return m.status !== "deleted"; });
+    var list = (opts.list || load()).filter(function (m) { return m.status !== "deleted" && !(m.mutedTurns > 0); });
     var qs = tokens(query);
     var scored = list.map(function (m) {
       var hay = m.fact + " " + (m.when || "");
@@ -214,6 +264,8 @@
     load: load, save: save, add: add, remove: remove, restore: restore,
     retrieve: retrieve, shouldExtract: shouldExtract,
     parseExtraction: parseExtraction, forPrompt: forPrompt,
+    correct: correct,
+    tickMuted: tickMuted,
     similar: similar, stats: stats
   };
 });
