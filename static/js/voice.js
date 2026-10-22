@@ -955,6 +955,12 @@
   /* 14.3 recognition.onerror 映射 */
   function mapRecognitionError(code) {
     switch (code) {
+      case "no-recognizer":
+        return "这台手机没有语音识别服务，直接用打字也行";
+      case "busy":
+        return "上一句还在听，等一下再按";
+      case "start-failed":
+        return "语音启动失败，再按一次试试";
       case "not-allowed":
       case "permission-denied":
         return "麦克风被拒绝了。点地址栏左边的小锁 → 权限 → 麦克风改成允许。";

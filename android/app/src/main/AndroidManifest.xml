@@ -127,5 +127,9 @@
             <action android:name="android.intent.action.PICK" />
             <data android:mimeType="image/*" />
         </intent>
+        <!-- 语音识别服务（原生插件要用） -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
 </manifest>

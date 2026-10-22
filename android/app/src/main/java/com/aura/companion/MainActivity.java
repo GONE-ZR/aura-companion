@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(IconSwitcherPlugin.class);
         registerPlugin(AuraTtsPlugin.class);
+        registerPlugin(AuraSpeechPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
