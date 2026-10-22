@@ -58,10 +58,17 @@ def check(name, cond, extra=""):
 
 
 print("\n--- 清单一致性 ---")
+import re as _re
+from pathlib import Path as _P
+_up = _P(r"D:\opencode workspace\aura-companion\static\js\updater.js").read_text(encoding="utf-8")
+_m = _re.search(r'var CURRENT = "([0-9.]+)"', _up)
+local_ver = _m.group(1) if _m else "?"
+print("本地 updater.js 版本：", local_ver)
 for label, base in (("Pages", PAGES), ("gh-proxy", PROXY)):
     try:
         mm = get(base + "downloads/latest.json", timeout=30).json()
-        check("%s 清单版本 1.0.2" % label, mm.get("version") == "1.0.2", str(mm.get("version")))
+        check("%s 清单版本 %s" % (label, local_ver), mm.get("version") == local_ver,
+              str(mm.get("version")))
         check("%s 清单 sha 与本机一致" % label, str(mm.get("sha256")) == local_sha,
               "%s… vs %s…" % (str(mm.get("sha256"))[:12], local_sha[:12]))
     except Exception as e:
