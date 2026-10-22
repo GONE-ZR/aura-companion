@@ -42,3 +42,6 @@ _tunnel.log
 tools/_patch_*.py
 tests/_live_*.txt
 tests/_tts_sample.mp3
+
+# GitHub ÁîÅÆ£¨¾ø²»½ø²Ö¿â£©
+.gh_token
