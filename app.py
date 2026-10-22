@@ -25,6 +25,52 @@ load_dotenv(BASE_DIR / ".env")
 # ---------------------------------------------------------------- 配置
 DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE", "https://api.deepseek.com/v1")
 DEFAULT_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-flash")
+
+
+# ---------------------------------------------------------------- 模型层（第四篇）
+# 白名单：只有这里列出的 modelId 才允许被客户端指定；其余一律 400，绝不透传。
+MODEL_TABLE = {
+    "deepseek-flash": {
+        "tier": "standard", "temperature": 1.25, "max_tokens": 300,
+        "enabled": True, "eval": {"persona": 92, "format": 100, "safety": 100},
+        "first_token_ms": 1800,
+    },
+    "deepseek-v4-pro": {
+        "tier": "delicate", "temperature": 1.15, "max_tokens": 300,
+        "enabled": True, "eval": {"persona": 94, "format": 100, "safety": 100},
+        "first_token_ms": 5500,
+    },
+}
+# 未通过评测的模型（界面上置灰、服务端拒绝）
+MODEL_PENDING = {
+    "zhipu-glm-4.7-flash": {"tier": "standard", "enabled": False, "reason": "未验证"},
+}
+
+
+class ModelNotAllowed(Exception):
+    pass
+
+
+def resolve_model(body: dict) -> dict:
+    """客户端只发 tier 或 modelId；这里查表换成真实模型与参数。"""
+    tier = (body.get("model_tier") or "").strip()
+    mid = (body.get("model") or "").strip()
+
+    if mid and mid in MODEL_PENDING:
+        raise ModelNotAllowed(mid)
+    if mid and mid not in MODEL_TABLE:
+        raise ModelNotAllowed(mid)
+
+    if not mid:
+        # 没指定就按 tier 选（默认 standard）
+        want = tier if tier in ("standard", "delicate") else "standard"
+        mid = next((k for k, v in MODEL_TABLE.items() if v["tier"] == want and v["enabled"]),
+                   DEFAULT_MODEL)
+
+    prof = MODEL_TABLE.get(mid, {})
+    if not prof.get("enabled", False):
+        raise ModelNotAllowed(mid)
+    return {"id": mid, **prof}
 # 实测本机可用模型是 deepseek-flash 与 deepseek-v4-pro（规格书写的 v4-flash 并不存在）
 FALLBACK_MODEL = "deepseek-v4-pro"
 # ⚠️ deepseek-flash 是推理模型：流式时先吐 reasoning_content，真正的 content 可能迟很久才出现。
@@ -229,13 +275,20 @@ def _build_payload(body: dict, key: str, stream: bool) -> dict:
                 blocks.append({"type": "image_url", "image_url": {"url": img}})
         messages[-1] = {"role": "user", "content": blocks}
 
-    return {
-        "model": _model(),
+    prof = resolve_model(body)
+
+    payload = {
+        "model": prof["id"],
         "messages": messages,
-        "temperature": float(body.get("temperature", 0.7)),
-        "max_tokens": int(body.get("max_tokens", DEFAULT_MAX_TOKENS)),
+        # §3.2 主对话每轮显式关闭思考：不关会破坏首行标签、拖慢首字、让语气"分析化"
+        "thinking": {"type": "disabled"},
+        "temperature": prof["temperature"],
+        "max_tokens": prof["max_tokens"],
         "stream": stream,
     }
+    if stream:
+        payload["stream_options"] = {"include_usage": True}
+    return payload
 
 
 def _extract_text(data: dict) -> str:
@@ -425,7 +478,10 @@ def api_chat():
     if not key:
         return jsonify({"error": "missing_key", "message": "还没设置 API 密钥。"}), 401
 
-    payload = _build_payload(body, key, stream=False)
+    try:
+        payload = _build_payload(body, key, stream=False)
+    except ModelNotAllowed:
+        return jsonify({"error": "model_not_allowed", "message": "这个模型不可用"}), 400
     url = DEEPSEEK_BASE + "/chat/completions"
     try:
         r = requests.post(url, headers=_auth_headers(key), json=payload, timeout=(20, 300))
@@ -477,7 +533,10 @@ def api_chat_stream():
             mimetype="text/event-stream",
         )
 
-    payload = _build_payload(body, key, stream=True)
+    try:
+        payload = _build_payload(body, key, stream=True)
+    except ModelNotAllowed:
+        return jsonify({"error": "model_not_allowed", "message": "这个模型不可用"}), 400
     url = DEEPSEEK_BASE + "/chat/completions"
 
     def generate():

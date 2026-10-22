@@ -266,7 +266,7 @@
     var asm = null;
     try {
       if (window.AuraPrompt) {
-        asm = window.AuraPrompt.assembleSplit({
+        asm = (window.AuraPrompt.assembleCached || window.AuraPrompt.assembleSplit)({
           engine: window.AuraEngine,
           state: engineState(),
           memories: window.AuraMemfacts ? window.AuraMemfacts.forPrompt() : [],
@@ -297,7 +297,21 @@
   var DS_URL = "https://api.deepseek.com/v1/chat/completions";
   var DS_MODEL = "deepseek-flash";
 
-  function buildDirectPayload(payload) {
+  /* ---------------- 第四篇：模型层（白名单 + 参数 + 思考必须关） ---------------- */
+  var MODELS = {
+    standard: { id: "deepseek-flash", temp: 1.25, maxTokens: 300 },
+    delicate: { id: "deepseek-v4-pro", temp: 1.15, maxTokens: 300 }
+  };
+  var FALLBACK = { id: "deepseek-flash", temp: 1.25, maxTokens: 300 };  /* 同 tier，通常就是 flash */
+
+  function tier() {
+    try { return S.getStr("aura_tier", "") === "delicate" ? "delicate" : "standard"; } catch (e) { return "standard"; }
+  }
+  function modelProfile(t) {
+    return MODELS[t] || MODELS.standard;
+  }
+
+  function buildDirectPayload(payload, useFallback) {
     var msgs = [];
     if (payload.system_prompt) msgs.push({ role: "system", content: payload.system_prompt });
     payload.messages.forEach(function (m) {
@@ -314,23 +328,59 @@
       }
       msgs.push({ role: m.role, content: content });
     });
+    var prof = useFallback ? FALLBACK : modelProfile(tier());
     return {
-      model: DS_MODEL,
+      model: prof.id,
+      /* §3.2：主对话每轮必须显式关闭思考模式，否则首行标签必被破坏 */
+      thinking: { type: "disabled" },
       messages: msgs,
-      temperature: payload.temperature,
-      max_tokens: payload.max_tokens,
-      stream: true
+      temperature: prof.temp,
+      max_tokens: prof.maxTokens,
+      stream: true,
+      stream_options: { include_usage: true }
     };
   }
 
-  function directRequest(payload) {
+  /* 连续 fallback 计数（第四篇 §8：连续 3 轮后设置页出现"当前使用备用线路"） */
+  var fallbackStreak = 0;
+
+  function directRequest(payload, useFallback) {
     return fetch(DS_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + cfg.apiKey
       },
-      body: JSON.stringify(buildDirectPayload(payload))
+      body: JSON.stringify(buildDirectPayload(payload, useFallback))
+    });
+  }
+
+  /* 失败重试 + 静默切备用（§8）：不弹窗、不改用户的选择、不降级 prompt */
+  function requestWithFallback(payload) {
+    var one = function (fallback) { return directRequest(payload, fallback); };
+    return one(false).then(function (res) {
+      if (res.ok) return res;
+      return new Promise(function (ok) { setTimeout(ok, 800); })
+        .then(function () { return one(false); })
+        .then(function (res2) {
+          if (res2.ok) return res2;
+          fallbackStreak += 1;
+          return one(true);
+        });
+    }).catch(function (err) {
+      /* 网络层失败也走同一条兜底链 */
+      return new Promise(function (ok) { setTimeout(ok, 800); })
+        .then(function () { return one(true); })
+        .catch(function () { throw err; });
+    }).then(function (res) {
+      if (res && res.ok) {
+        /* 成功则清零（但连 3 轮用过备用时保留标记给设置页） */
+        if (fallbackStreak >= 3 && S.getStr("aura_fallback_note", "") !== "1") {
+          S.setStr("aura_fallback_note", "1");
+          try { bus.emit("fallback:streak", fallbackStreak); } catch (e) { }
+        }
+      }
+      return res;
     });
   }
 
@@ -541,7 +591,7 @@
     var controller = ("AbortController" in window) ? new AbortController() : null;
 
     var req = isDirect()
-      ? directRequest(payload).then(function (res) {
+      ? requestWithFallback(payload).then(function (res) {
           /* 直连模式没有本地服务器做图片块转换，这里自己补一次 */
           return res;
         })
@@ -555,7 +605,7 @@
              只要本机有密钥，就自动退回直连，别让用户卡在这儿。 */
           if (cfg.apiKey) {
             try { toast("连不上服务，改走直连"); } catch (e) { }
-            return directRequest(payload);
+            return requestWithFallback(payload);
           }
           throw err;
         });

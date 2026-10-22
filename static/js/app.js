@@ -835,6 +835,50 @@
       });
     } catch (e) { /* ignore */ }
 
+
+    /* ---------------- 15.12 第四篇：细腻程度 + 折叠的高级设置 ---------------- */
+    try {
+      var tierRadios = document.querySelectorAll('input[name="tier"]');
+      var curTier = S.getStr("aura_tier", "") === "delicate" ? "delicate" : "standard";
+      tierRadios.forEach(function (r) {
+        r.checked = (r.value === curTier);
+        r.addEventListener("change", function () {
+          var before = S.getStr("aura_tier", "") === "delicate" ? "delicate" : "standard";
+          S.setStr("aura_tier", r.value);
+          /* 首次切换提示一次，第二次起不再提示（§6.1） */
+          if (before !== r.value && S.getStr("aura_tier_hinted", "") !== "1") {
+            S.setStr("aura_tier_hinted", "1");
+            toast("换个模型，她说话可能会有点不一样");
+          } else {
+            toast(r.value === "delicate" ? "换成细腻了" : "换成标准了");
+          }
+        });
+      });
+
+      /* 连点版本号 5 次 → 解锁高级块（§9.2） */
+      var aboutLine = $("about-line");
+      var adv = $("model-adv");
+      if (aboutLine && adv) {
+        var taps = 0, tapTimer = null;
+        aboutLine.style.cursor = "default";
+        aboutLine.addEventListener("click", function () {
+          taps += 1;
+          if (tapTimer) clearTimeout(tapTimer);
+          tapTimer = setTimeout(function () { taps = 0; }, 1200);
+          if (taps >= 5) {
+            adv.hidden = false;
+            taps = 0;
+            toast("已显示模型与接口（调试信息）");
+          }
+        });
+        /* 连续 fallback 3 轮后显示"当前使用备用线路"（§8） */
+        if (S.getStr("aura_fallback_note", "") === "1") {
+          var line = $("model-adv-line");
+          if (line) line.textContent = "当前线路：备用线路";
+        }
+      }
+    } catch (e) { /* ignore */ }
+
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
       setTimeout(function () {

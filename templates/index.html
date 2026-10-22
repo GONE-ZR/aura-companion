@@ -226,6 +226,18 @@
       <input id="in-remote-cfg" class="txt" type="text" placeholder="留空＝用 GitHub raw">
       <p class="hint">后台管理页改完设置后，手机靠这个地址拉最新配置。留空就用 GitHub 上的地址；填自己的服务器 / 隧道地址则秒级生效。</p>
     </div>
+    <div class="drawer-item" style="--i:4" id="tier-row">
+      <label class="row"><span>她说话的细腻程度</span></label>
+      <label class="row"><input type="radio" name="tier" value="standard">
+        <span>标准　<span class="hint">够聊，回得快</span></span></label>
+      <label class="row"><input type="radio" name="tier" value="delicate">
+        <span>细腻　<span class="hint">语气更细，稍慢</span></span></label>
+    </div>
+    <div class="drawer-item" style="--i:5" id="model-adv" hidden>
+      <label class="row"><span>模型与接口</span></label>
+      <p class="hint" id="model-adv-line">当前线路：主线路</p>
+      <p class="hint">调试信息，普通使用不需要动这里。</p>
+    </div>
     <div class="drawer-item" style="--i:4" id="motion-row">
       <label class="row" for="in-reduce-motion"><span>减弱动效</span></label>
       <label class="row"><input id="in-reduce-motion" type="checkbox">

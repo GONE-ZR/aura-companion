@@ -335,6 +335,70 @@
     };
   }
 
+  /* ---------------- 第四篇 §3.3：为「前缀缓存」重排装配 ----------------
+     messages[0]      = system：人设（完全静态，永不改 —— 不放时间/状态/忍耐值）
+     messages[1..n-1] = 历史（只追加，不改写、不插时间戳）
+     messages[n]      = user：[状态块] + [记忆块] + 用户输入
+     这样前缀才稳定，DeepSeek 的上下文缓存才命中。
+  */
+  function assembleCached(input) {
+    var opts = input || {};
+    var engine = opts.engine;
+
+    /* system 只放静态内容（人设 + 能力小节），一个字都不随轮次变 */
+    var system = [
+      CHARACTER_STATIC.replace(/\{\{危机热线\}\}/g, opts.hotline || HOTLINE)
+        .replace(/\{\{紧急联系人\}\}/g, opts.emergency || "你信任的人"),
+      SEC_ABILITIES,
+      opts.variantDiff ? ("\\n\\n【补充】" + String(opts.variantDiff).slice(0, 80)) : ""
+    ].join("\\n\\n").trim();
+
+    var stateBlock = buildStateBlock(opts, engine);
+    var memBlock = buildMemoriesBlock(opts.memories);
+
+    /* 历史：只追加，原样保留 */
+    var msgs = [];
+    if (opts.summary) msgs.push({ role: "system", content: "【之前的对话摘要】" + opts.summary });
+    (opts.history || []).forEach(function (m) {
+      if (m && m.text) msgs.push({ role: m.role === "user" ? "user" : "assistant", content: m.text });
+    });
+
+    /* 预算：历史 + 状态 + 记忆 ≤ 4000（从旧往新裁） */
+    var budget = MAX_CHARS - system.length - stateBlock.length - memBlock.length - 40;
+    var kept = [];
+    for (var i = msgs.length - 1; i >= 0; i--) {
+      var len = String(msgs[i].content).length;
+      if (budget - len < 0) break;
+      budget -= len;
+      kept.unshift(msgs[i]);
+    }
+
+    /* 最后一条 user = 状态 + 记忆 + 用户输入 */
+    var last = kept.length ? kept[kept.length - 1] : null;
+    if (last && last.role === "user") {
+      kept[kept.length - 1] = {
+        role: "user",
+        content: "（系统补充，不要复述、不要提到它：\\n" + stateBlock +
+          "\\n\\n【你记得的事】\\n" + memBlock + "\\n）\\n\\n" + last.content
+      };
+    } else {
+      kept.push({
+        role: "user",
+        content: "（系统补充，不要复述：\\n" + stateBlock +
+          "\\n\\n【你记得的事】\\n" + memBlock + "\\n）"
+      });
+    }
+
+    return {
+      system: system,
+      messages: kept,
+      stateBlock: stateBlock,
+      memoryBlock: memBlock,
+      chars: system.length + kept.reduce(function (a, m) { return a + String(m.content).length; }, 0),
+      safety: false
+    };
+  }
+
   /* ---------------- 按 §五 顺序拆分装配 ----------------
      [1] 静态角色 + [3] 记忆  → system
      [2] 历史                  → messages
@@ -401,6 +465,7 @@
     SUMMARY_PROMPT: SUMMARY_PROMPT,
     assemble: assemble,
     assembleSplit: assembleSplit,
+    assembleCached: assembleCached,
     buildMemoriesBlock: buildMemoriesBlock,
     buildMemoriesSection: buildMemoriesSection,
     buildStateBlock: buildStateBlock,
