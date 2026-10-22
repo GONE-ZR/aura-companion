@@ -158,6 +158,30 @@ cd android && ./gradlew assembleDebug
 * APK 里语音识别走系统原生（`@capacitor-community/speech-recognition`），不依赖 Google 服务。
 * 桌面图标可在应用内更换（5 套配色），靠 `activity-alias` + `PackageManager` 实现。
 
+### 4.1 发布签名版（推荐自己用）
+
+仓库里附了**已签名的 release APK**（3.3 MB，比 debug 版小 20%，无 debug 标记、运行更快）。
+签名信息：
+
+| 项 | 值 |
+|---|---|
+| keystore | `D:\tools\aura-release.keystore`（PKCS12，别弄丢） |
+| 别名 / 密码 | `aura` / `auracomp2026` |
+| 证书 SHA-256 | `686a3409e567318aa72359b1fc2c4038c42139e46bb14e478698e884c8680bbb` |
+
+重新打包：
+
+```bash
+cd android
+gradlew.bat assembleRelease          # 产物：app\build\outputs\apk\release\app-release.apk
+```
+
+* `keystore.properties`（含密码）**已在 .gitignore 里**，绝不要提交
+* **以后每一版都必须用同一个 keystore 签名**，否则手机会拒绝覆盖安装（会丢本机数据）
+* 没配 `keystore.properties` 时自动回落到 debug 签名，保证任何人 clone 下来都能编译
+
+---
+
 ## 5. 目录结构
 
 ```

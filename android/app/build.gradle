@@ -16,10 +16,26 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // 发布签名：keystore.properties 不进仓库（.gitignore 已排除）
+        // 没有 properties 时回落到 debug 签名，保证任何人 clone 下来都能编译
+        release {
+            def propsFile = rootProject.file('keystore.properties')
+            if (propsFile.exists()) {
+                def props = new Properties()
+                props.load(new FileInputStream(propsFile))
+                storeFile file(props['storeFile'])
+                storePassword props['storePassword']
+                keyAlias props['keyAlias']
+                keyPassword props['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig rootProject.file('keystore.properties').exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

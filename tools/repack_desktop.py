@@ -22,7 +22,10 @@ def collect():
                        and not (d == "build" and "android" in Path(dirpath).as_posix())]
         for fn in filenames:
             p = Path(dirpath) / fn
-            if fn == ".env" or fn.endswith(".env.local"):
+            if fn == ".env" or fn.endswith(".env.local") or fn == ".gh_token":
+                continue
+            # 本机自动化脚本（含个人信息），不进交付副本
+            if p.parent.name == "tools" and (fn.startswith("_") or fn == "cdp.js"):
                 continue
             if p.suffix.lower() in SKIP_EXT:
                 continue
