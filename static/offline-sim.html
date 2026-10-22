@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><script>
+(function(){
+  window.__OFFLINE_SIM__ = true;
+  var of = window.fetch;
+  window.fetch = function(u, o){
+    var s = String(u);
+    if (s.indexOf('/static/') === 0) return of.apply(this, arguments);
+    return Promise.reject(new TypeError('offline-sim'));
+  };
+  try { Object.defineProperty(navigator, 'onLine', { get: function(){ return false; } }); } catch(e){}
+})();
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F6F4F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16191B" media="(prefers-color-scheme: dark)">
+<meta name="description" content="安静的陪伴">
+<title>我在</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/polish.css">
+<link rel="stylesheet" href="/static/css/remote.css">
+<link rel="stylesheet" href="/static/css/emotion.css">
+<link rel="stylesheet" href="/static/css/second.css">
+<link rel="stylesheet" href="/static/css/comic.css">
+<!-- 柔和流动主题（新增 · 不加 data-soft="1" 时零影响） -->
+<link rel="stylesheet" href="/static/css/theme-soft.css">
+</head>
+<body data-theme="light">
+
+<!-- 壁纸层 → 蒙版层 → 柔光层 → 内容 -->
+<div id="wp-layer" aria-hidden="true"></div>
+<div id="mask-layer" aria-hidden="true"></div>
+<div id="glow-layer" aria-hidden="true">
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+</div>
+
+<header class="top" id="top">
+  <div class="who">
+    <span id="ai-name">我</span>
+    <span class="status-dot" aria-hidden="true"></span>
+    <button id="mood-dot" class="mood-dot" aria-label="情感状态" title="情感状态"></button>
+  </div>
+  <div class="acts">
+    <button id="btn-wall" class="icon-btn" data-feature="wallpaper" aria-label="换壁纸" title="换壁纸">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="9.5" r="1.5" fill="currentColor"/><path d="M5.5 17l4.2-4.6 3 3.2 2.4-2.4 3.4 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="btn-reset" class="icon-btn" aria-label="重置会话" title="重置会话">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="btn-settings" class="icon-btn" aria-label="设置" title="设置">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h9M17 17h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="15" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="log" role="log" aria-live="polite" aria-label="对话"></main>
+
+<div id="update-bar" data-feature="updateBar" hidden>
+  <span class="ub-text">有新版本了</span>
+  <button id="ub-update" class="ub-btn">现在更新</button>
+  <button id="ub-skip" class="ub-x" aria-label="忽略这次">×</button>
+</div>
+
+<div id="attach-row" hidden>
+  <div class="thumb-wrap">
+    <img id="attach-thumb" alt="待发送的图片">
+    <button id="attach-cancel" aria-label="取消图片">×</button>
+  </div>
+</div>
+
+<footer class="input-bar" id="input-bar">
+  <button id="btn-img" class="icon-btn" aria-label="发一张图" title="发一张图">
+    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 16.5l4-4.4 2.8 3 2.2-2.2 3.7 4.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button id="btn-mic" class="icon-btn mic" aria-label="语音输入" title="语音输入">
+    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <span class="mic-ring"></span><span class="mic-ring"></span><span class="mic-ring"></span>
+  </button>
+  <textarea id="input" rows="1" placeholder="说点什么…" autocomplete="off" spellcheck="false"></textarea>
+  <button id="btn-stop" class="icon-btn" hidden aria-label="停止">■</button>
+      <button id="btn-send" class="send-btn" aria-label="发送" title="发送" disabled>
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 12l16-7-7 16-2-6z" fill="currentColor"/></svg>
+  </button>
+</footer>
+
+<input type="file" id="file-attach" accept="image/*" hidden>
+<input type="file" id="file-wall" accept="image/*" hidden>
+<input type="file" id="file-cam" accept="image/*" capture="environment" hidden>
+
+<!-- ───────────── 抽屉（设置） ───────────── -->
+<div id="scrim" hidden></div>
+<aside id="drawer" aria-hidden="true" aria-label="设置">
+  <div class="drawer-head">
+    <span>设置</span>
+    <button id="drawer-close" class="icon-btn" aria-label="关闭">×</button>
+  </div>
+  <div class="drawer-body">
+
+    <h3 class="sec">连接</h3>
+    <div class="drawer-item" style="--i:0">
+      <label class="row" for="in-mode"><span>连接方式</span></label>
+      <select id="in-mode" class="txt">
+        <option value="direct">手机直连（推荐，不需要服务器）</option>
+        <option value="server">走我的服务器</option>
+      </select>
+      <p class="hint">直连＝手机自己调用模型，密钥只存在这台设备上，电脑关机也能用；
+        服务器＝经过你自己部署的服务，朗读音色更好。</p>
+    </div>
+    <div class="drawer-item" style="--i:1">
+      <label class="row" for="in-key"><span>DeepSeek 密钥</span></label>
+      <input id="in-key" class="txt" type="password" placeholder="sk-..." autocomplete="off">
+      <div class="btn-row">
+        <button id="btn-key-save" class="btn primary">保存密钥</button>
+        <button id="btn-key-clear" class="btn">清除</button>
+      </div>
+      <p class="hint">只存在这台设备上，不上传、不同步。</p>
+    </div>
+    <div class="drawer-item" style="--i:2">
+      <label class="row" for="in-think"><span>回复前的停顿</span></label>
+      <select id="in-think" class="txt">
+        <option value="off">不等（最快）</option>
+        <option value="short">很短（推荐）</option>
+        <option value="normal">标准（有拟真感）</option>
+      </select>
+    </div>
+
+    <h3 class="sec">陪伴</h3>
+    <div class="drawer-item" style="--i:0">
+      <label class="row" for="in-ai-name"><span>我的名字</span></label>
+      <input id="in-ai-name" class="txt" type="text" maxlength="20" placeholder="叫什么">
+    </div>
+    <div class="drawer-item" style="--i:1">
+      <label class="row" for="in-user-name"><span>怎么称呼你</span></label>
+      <input id="in-user-name" class="txt" type="text" maxlength="20" placeholder="你想我叫你">
+    </div>
+    <div class="drawer-item" style="--i:2">
+      <label class="row" for="in-persona"><span>说话方式</span></label>
+      <select id="in-persona" class="txt"></select>
+      <textarea id="in-persona-text" class="txt area" rows="6" spellcheck="false"></textarea>
+      <div class="btn-row">
+        <button id="btn-persona-reset" class="btn">恢复这一档的原文</button>
+        <button id="btn-persona-apply" class="btn primary">应用</button>
+      </div>
+    </div>
+    <div class="drawer-item" style="--i:3">
+      <label class="row" for="in-couple"><span>恋人模式</span></label>
+      <button id="in-couple" class="switch" role="switch" aria-checked="false" aria-label="恋人模式"><i></i></button>
+      <p class="hint">开启后会用恋人的方式说话。任何时候都能在情感面板里切回来。</p>
+    </div>
+    <div class="drawer-item" style="--i:4">
+      <label class="row" for="in-mood-on"><span>情绪状态</span></label>
+      <button id="in-mood-on" class="switch" role="switch" aria-checked="true" aria-label="情绪状态"><i></i></button>
+    </div>
+    <div class="drawer-item" style="--i:5">
+      <label class="row"><span>情绪鲜明度</span></label>
+      <select id="in-face-level" class="txt">
+        <option value="calm">平静</option>
+        <option value="normal">自然</option>
+        <option value="vivid">鲜明</option>
+      </select>
+      <button id="btn-face-preview" class="btn">颜色变化预览</button>
+    </div>
+    <div class="drawer-item" style="--i:6">
+      <label class="row" for="in-tint"><span>情绪配色</span></label>
+      <button id="in-tint" class="switch" role="switch" aria-checked="true" aria-label="情绪配色"><i></i></button>
+    </div>
+
+    <h3 class="sec">朗读</h3>
+    <div class="drawer-item" style="--i:0">
+      <label class="row" for="in-voice-base"><span>基准音色</span></label>
+      <select id="in-voice-base" class="txt"></select>
+    </div>
+    <div class="drawer-item" style="--i:1">
+      <label class="row" for="in-voice-rate"><span>语速 <b id="val-rate">0.95</b></span></label>
+      <input id="in-voice-rate" type="range" min="0.8" max="1.2" step="0.01" value="0.95">
+    </div>
+    <div class="drawer-item" style="--i:2">
+      <label class="row" for="in-voice-vol"><span>音量 <b id="val-vol">100</b></span></label>
+      <input id="in-voice-vol" type="range" min="0.6" max="1" step="0.01" value="1">
+    </div>
+    <div class="drawer-item" style="--i:3" data-feature="voice">
+      <label class="row" for="in-voice-auto"><span>情绪自动换音色</span></label>
+      <button id="in-voice-auto" class="switch" role="switch" aria-checked="true" aria-label="情绪自动换音色"><i></i></button>
+      <div id="voice-map-wrap" class="voice-map"></div>
+    </div>
+    <div class="drawer-item" style="--i:4" id="voice-pick-row" data-feature="voice" hidden>
+      <label class="row" for="in-voice-pick"><span>手机音色</span></label>
+      <select id="in-voice-pick" class="txt"></select>
+      <p class="hint">APK 里可以挑手机自带的更好听的音色（神经网络音色比默认的自然很多）。</p>
+    </div>
+
+    <h3 class="sec">外观</h3>
+    <div class="drawer-item" style="--i:0">
+      <label class="row"><span>主题</span></label>
+      <div class="seg" id="in-theme">
+        <button data-v="light">浅</button><button data-v="dark">深</button><button data-v="auto">跟随系统</button>
+      </div>
+    </div>
+    <div class="drawer-item" style="--i:1">
+      <label class="row"><span>主题色</span></label>
+      <div class="swatches" id="accent-swatches"></div>
+      <input id="in-accent" class="txt hex" type="text" maxlength="7" placeholder="#8CA6A0">
+    </div>
+    <div class="drawer-item" style="--i:2" data-feature="wallpaper">
+      <label class="row" for="in-mask"><span>壁纸蒙版 <b id="val-mask">70</b>%</span></label>
+      <input id="in-mask" type="range" min="0" max="90" step="1" value="70">
+      <div class="btn-row">
+        <button id="btn-wall-pick" class="btn">从相册选择</button>
+        <button id="btn-wall-cam" class="btn">拍照</button>
+        <button id="btn-wall-clear" class="btn">清除壁纸</button>
+      </div>
+    </div>
+
+    <!-- 柔和流动主题（新增） -->
+    <div class="drawer-item" style="--i:3">
+      <label class="row"><span>柔和流动风格</span></label>
+      <button id="in-soft" class="switch" role="switch" aria-checked="true" aria-label="柔和流动风格"><i></i></button>
+      <p class="hint">把气泡和输入栏换成渐变玻璃质感。关掉就回到原来的暖纸极简风。</p>
+    </div>
+    <div class="drawer-item" style="--i:3b" id="in-soft-palette-row">
+      <label class="row" for="in-soft-palette"><span>配色预设</span></label>
+      <select id="in-soft-palette" class="txt">
+        <option value="auto">跟随主题色（推荐）</option>
+        <option value="violet">紫 · 梦幻</option>
+        <option value="mint">薄荷 · 清爽</option>
+        <option value="amber">暖橙 · 温暖</option>
+      </select>
+      <p class="hint">选预设会直接改主色；开启「情绪配色」时，情绪变化会覆盖它（情绪色优先）。</p>
+    </div>
+
+    <div class="drawer-item" style="--i:4" id="in-remote-cfg-row">
+      <label class="row" for="in-remote-cfg"><span>配置更新地址</span></label>
+      <input id="in-remote-cfg" class="txt" type="text" placeholder="留空＝用 GitHub raw">
+      <p class="hint">后台管理页改完设置后，手机靠这个地址拉最新配置。留空就用 GitHub 上的地址；填自己的服务器 / 隧道地址则秒级生效。</p>
+    </div>
+    <div class="drawer-item" style="--i:4" id="tier-row">
+      <label class="row"><span>她说话的细腻程度</span></label>
+      <label class="row"><input type="radio" name="tier" value="standard">
+        <span>标准　<span class="hint">够聊，回得快</span></span></label>
+      <label class="row"><input type="radio" name="tier" value="delicate">
+        <span>细腻　<span class="hint">语气更细，稍慢</span></span></label>
+    </div>
+    <div class="drawer-item" style="--i:5" id="model-adv" hidden>
+      <label class="row"><span>模型与接口</span></label>
+      <p class="hint" id="model-adv-line">当前线路：主线路</p>
+      <p class="hint">调试信息，普通使用不需要动这里。</p>
+    </div>
+    <div class="drawer-item" style="--i:4" id="comic-row">
+      <label class="row"><span>漫画风</span></label>
+      <label class="row"><input id="in-comic" type="checkbox" checked>
+        <span>墨线 + 网点 + 手绘气泡</span></label>
+      <p class="hint">关掉回到暖纸风（衬线 + 细线）。</p>
+    </div>
+    <div class="drawer-item" style="--i:4" id="motion-row">
+      <label class="row" for="in-reduce-motion"><span>减弱动效</span></label>
+      <label class="row"><input id="in-reduce-motion" type="checkbox">
+        <span>关掉呼吸、眨眼与逐字输出</span></label>
+      <p class="hint">对动效敏感时用这个。开了以后表情改淡入淡出。</p>
+    </div>
+    <div class="drawer-item" style="--i:4" id="quick-row">
+      <label class="row" for="in-quick-replies"><span>快捷回应</span></label>
+      <label class="row"><input id="in-quick-replies" type="checkbox" checked>
+        <span>她问问题时给三个短选项</span></label>
+    </div>
+    <div class="drawer-item" style="--i:4" id="cfg-row">
+      <label class="row"><span>配置</span></label>
+      <p class="hint" id="cfg-line">加载中…</p>
+      <button id="btn-cfg-reset" class="btn">恢复默认配置</button>
+      <p class="hint">长按下面的版本号 5 秒也能恢复（连不上电脑时的最后一道保险）。</p>
+    </div>
+    <div class="drawer-item" style="--i:5" id="about-row">
+      <label class="row"><span>关于</span></label>
+      <p class="hint" id="about-line">版本加载中…</p>
+      <button id="btn-ai-decl" class="btn">看 AI 身份声明</button>
+      <button id="btn-review2" class="btn" style="margin-left:8px">回顾与记忆</button>
+    </div>
+    <div class="drawer-item" style="--i:5" id="icon-row" data-feature="developerTools" hidden>
+      <label class="row"><span>桌面图标</span></label>
+      <div class="swatches" id="icon-swatches"></div>
+      <p class="hint">点一下立即更换。部分手机需要回到桌面等一两秒。</p>
+    </div>
+
+    <h3 class="sec">天气</h3>
+    <div class="drawer-item" style="--i:0" data-feature="weather">
+      <div class="wx-card" id="wx-card">
+        <div class="wx-main"><span id="wx-city">未设置</span><span id="wx-temp"></span></div>
+        <div class="wx-sub" id="wx-desc">打开天气卡片后才会查</div>
+        <div class="wx-days" id="wx-days"></div>
+        <div class="btn-row">
+          <button id="btn-wx-city" class="btn">改城市</button>
+          <button id="btn-wx-locate" class="btn">用当前位置</button>
+          <button id="btn-wx-toggle" class="switch" role="switch" aria-checked="true" aria-label="天气功能"><i></i></button>
+        </div>
+        <label class="row small" for="in-wx-daily"><span>每天第一次打开时提一句</span></label>
+        <button id="in-wx-daily" class="switch" role="switch" aria-checked="false" aria-label="每天提一句"><i></i></button>
+      </div>
+    </div>
+
+    <h3 class="sec">更多</h3>
+    <div class="drawer-item" style="--i:0">
+      <button id="btn-mic-check" class="btn">麦克风自检</button>
+      <button id="btn-key" class="btn">设置 API 密钥</button>
+    </div>
+    <div class="drawer-item" style="--i:1" id="desktop-only">
+      <button id="btn-export" class="btn">导出全部数据为 JSON</button>
+      <button id="btn-import" class="btn">导入数据</button>
+      <input type="file" id="file-import" accept="application/json" hidden>
+    </div>
+    <div class="drawer-item" style="--i:2">
+      <p class="tiny" id="version-line">版本</p>
+      <button id="btn-review" class="btn">回顾</button>
+      <button id="btn-check-update" class="btn">检查更新</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ───────────── 情感面板 ───────────── -->
+<div id="sheet-scrim" hidden></div>
+<section id="sheet" aria-hidden="true" aria-label="情感状态">
+  <div class="sheet-grip"></div>
+  <div class="sheet-body">
+    <div class="sheet-stage" id="sheet-stage">初识</div>
+    <div class="sheet-temp" id="sheet-temp">安静</div>
+    <svg class="sheet-chart" id="sheet-chart" viewBox="0 0 300 88" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="sheetFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity=".08"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path id="chart-line" d="" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-opacity=".75"/>
+      <path id="chart-area" d="" fill="url(#sheetFill)"/>
+      <circle id="chart-dot" r="2" fill="var(--accent)" stroke="none"/>
+    </svg>
+    <p class="sheet-note" id="sheet-note">再聊几次，这里会慢慢有形状。</p>
+    <div class="btn-row sheet-acts">
+      <button id="btn-couple-off" class="btn" hidden>切回默认陪伴</button>
+      <button id="btn-sheet-close" class="btn">关闭</button>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────── 通用弹窗 ───────────── -->
+<div id="modal-scrim" hidden></div>
+<div id="modal" role="dialog" aria-modal="true" hidden>
+  <div class="modal-body">
+    <p id="modal-text"></p>
+    <div id="modal-extra"></div>
+    <div class="btn-row">
+      <button id="modal-cancel" class="btn" hidden>取消</button>
+      <button id="modal-ok" class="btn primary">知道了</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+
+<script src="/static/js/idb.js"></script>
+<script src="/static/js/settings.js"></script>
+<script src="/static/js/cfgstore.js"></script>
+<script>fetch("/static/config.bundled.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j)window.AURA_CFG_BUNDLED=j;}).catch(function(){});</script>
+<script src="/static/js/engine.js"></script>
+<script src="/static/js/prompt.js"></script>
+<script src="/static/js/safety.js"></script>
+<script src="/static/js/memfacts.js"></script>
+<script src="/static/js/meta.js"></script>
+<script src="/static/js/emotion-ui.js"></script>
+<script src="/static/js/review.js"></script>
+<script src="/static/js/onboarding.js"></script>
+<script src="/static/js/modes.js"></script>
+<script src="/static/js/offline-lines.js"></script>
+<script src="/static/js/offline.js"></script>
+<script src="/static/js/recycle.js"></script>
+<script src="/static/js/usage.js"></script>
+<script src="/static/js/life.js"></script>
+<script src="/static/js/openloop.js"></script>
+<script src="/static/js/theme-soft.js"></script>
+<script src="/static/js/expressions.js"></script>
+<script src="/static/js/updater.js"></script>
+<script src="/static/js/remote-config.js"></script>
+<script src="/static/js/mood.js"></script>
+<script src="/static/js/memory.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/voice.js"></script>
+<script src="/static/js/wallpaper.js"></script>
+<script src="/static/js/weather.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

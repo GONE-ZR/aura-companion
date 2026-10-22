@@ -59,14 +59,14 @@
     "killSwitch": false
   },
   "schemaVersion": 1,
-  "configVersion": 23,
+  "configVersion": 24,
   "appearance": {
     "background": "warm",
     "expression": "expr.soft",
     "iconPack": "pack.default"
   },
   "copy": {
-    "inputPlaceholder": "说点什么…",
+    "inputPlaceholder": "手机实测文案A",
     "emptyState": "我在。"
   },
   "quickReplies": {
@@ -88,5 +88,6 @@
     "dailyMax": 2,
     "quietStart": "23:00",
     "quietEnd": "08:00"
-  }
+  },
+  "updatedAt": "2026-10-23T01:30:00Z"
 }

@@ -46,7 +46,13 @@
       });
   }
 
-  /* 依次尝试多个源，取第一个有更新的 */
+  /* 版本号：新 schema 用 configVersion，旧 schema 用 version —— 统一取大的那个 */
+  function verOf(cfg) {
+    if (!cfg) return 0;
+    return Number(cfg.configVersion || cfg.version || 0);
+  }
+
+  /* 依次尝试多个源，取版本号最高的那个 */
   function fetchConfig() {
     var list = urls();
     var i = 0;
@@ -54,8 +60,8 @@
       if (i >= list.length) return Promise.resolve(null);
       var u = list[i++];
       return fetchOne(u).then(function (cfg) {
-        if (!cfg || cfg.version === undefined) return next();
-        if (state.config && Number(cfg.version) <= Number(state.version)) return next();
+        if (!cfg || verOf(cfg) === 0) return next();
+        if (state.config && verOf(cfg) <= verOf(state.config)) return next();
         state.source = u;
         return cfg;
       }).catch(function () { return next(); });
@@ -68,31 +74,48 @@
      来源可能是 active / scan / bundled，字段一律带兜底。 */
   function applyFromStore(c) {
     if (!c) return;
+    /* 可观测标记：手机上「当前生效的配置版本」——排查用，也能在设置页显示 */
     try {
-      /* 文案 */
-      if (c.copy) {
-        if (c.copy.inputPlaceholder) {
-          A.store.setStr("aura_text_placeholder", c.copy.inputPlaceholder);
+      window.__cfgApplied = {
+        at: Date.now(),
+        ver: Number(c.configVersion || c.version || 0),
+        hasCopy: !!(c.copy && c.copy.inputPlaceholder)
+      };
+    } catch (e) { }
+    /* 每一项都单独容错：启动早期某个模块还没就绪，不许把后面几项一起带崩 */
+    function safe(fn) { try { fn(); } catch (e) { /* 单项失败不影响其它项 */ } }
+
+    /* 文案：先改界面，再落盘（落盘失败不影响界面） */
+    if (c.copy) {
+      if (c.copy.inputPlaceholder) {
+        safe(function () {
           var inp = document.getElementById("input");
           if (inp) inp.placeholder = c.copy.inputPlaceholder;
-        }
-        if (c.copy.emptyState) {
-          A.store.setStr("aura_text_empty", c.copy.emptyState);
+        });
+        safe(function () { A.store.setStr("aura_text_placeholder", c.copy.inputPlaceholder); });
+      }
+      if (c.copy.emptyState) {
+        safe(function () {
           var em = document.querySelector(".empty-text");
           if (em) em.textContent = c.copy.emptyState;
-        }
+        });
+        safe(function () { A.store.setStr("aura_text_empty", c.copy.emptyState); });
       }
-      /* 背景 */
-      if (c.appearance && c.appearance.background) {
-        document.body.setAttribute("data-bg", c.appearance.background);
-      }
-      /* 快捷短语 */
-      if (c.quickReplies && Array.isArray(c.quickReplies.items) && c.quickReplies.items.length) {
-        A.store.set("aura_shortcuts", c.quickReplies.items.slice(0, 6));
+    }
+    /* 背景 */
+    if (c.appearance && c.appearance.background) {
+      safe(function () { document.body.setAttribute("data-bg", c.appearance.background); });
+    }
+    /* 快捷短语 */
+    if (c.quickReplies && Array.isArray(c.quickReplies.items) && c.quickReplies.items.length) {
+      safe(function () { A.store.set("aura_shortcuts", c.quickReplies.items.slice(0, 6)); });
+      safe(function () {
         if (A.features && A.features.renderShortcuts) A.features.renderShortcuts();
-      }
-      /* 功能开关 + killSwitch（安全层永远不在这里） */
-      if (c.features) {
+      });
+    }
+    /* 功能开关 + killSwitch（安全层永远不在这里） */
+    if (c.features) {
+      safe(function () {
         var kill = !!c.features.killSwitch;
         var eff = {};
         ["weather", "reminders", "search", "agentMode", "voiceTts", "lifeLine"].forEach(function (k) {
@@ -102,12 +125,12 @@
           document.body.setAttribute("data-flag-" + k, eff[k] ? "1" : "0");
         });
         document.body.setAttribute("data-killswitch", kill ? "1" : "0");
-      }
-      /* 细腻程度（只读，不覆盖用户手选） */
-      if (c.model && c.model.tier) {
-        A.store.setStr("aura_tier_forced", c.model.tier);
-      }
-    } catch (e) { /* 配置应用失败不许影响界面 */ }
+      });
+    }
+    /* 细腻程度（只读，不覆盖用户手选） */
+    if (c.model && c.model.tier) {
+      safe(function () { A.store.setStr("aura_tier_forced", c.model.tier); });
+    }
   }
 
   /* ---------------- 应用 ---------------- */
@@ -286,9 +309,9 @@
   function poll() {
     return fetchConfig().then(function (cfg) {
       if (!cfg) return null;
-      if (state.config && cfg.version === state.version) return cfg;   /* 没变就不动 */
+      if (state.config && verOf(cfg) === verOf(state.config)) return cfg;   /* 没变就不动 */
       state.config = cfg;
-      state.version = cfg.version;
+      state.version = verOf(cfg);
       state.appliedAt = Date.now();
       A.store.set("aura_remote_cfg_cache", cfg);
       /* 第七篇 §4：只升不降 + 原子提交（提交失败就用现有的，不半新半旧） */
@@ -342,6 +365,12 @@
 
   function init() {
     applyCached();
+    /* 启动就先把「上次落盘的三层配置」应用到界面 ——
+       不能只等 poll 拿到更新才应用，否则电脑关机后手机上看到的还是旧界面 */
+    try {
+      var act = window.AuraCfg && window.AuraCfg.loadActive();
+      if (act && act.config) applyFromStore(act.config);
+    } catch (e) { /* 配置应用失败不许影响启动 */ }
     poll();
     setInterval(poll, 30 * 1000);
     document.addEventListener("visibilitychange", function () {
@@ -361,13 +390,16 @@
     source: function () { return state.source || ""; },
     apply: function (cfg) {
       state.config = cfg;
-      state.version = cfg.version;
+      state.version = verOf(cfg);
       applyTheme(cfg.theme);
       applyFeatures(cfg.features);
       applyFlags(cfg.flags);
       applyText(cfg.text);
       applyShortcuts(cfg.shortcuts);
       applyIcon(cfg.icon);
-    }
+      /* 新 schema：文案/背景/快捷短语/开关/细腻度 */
+      applyFromStore(cfg);
+    },
+    applyFromStore: applyFromStore
   };
 })();

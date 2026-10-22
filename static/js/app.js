@@ -915,6 +915,23 @@
         if (window.Aura.remote && window.Aura.remote.applyFromStore) {
           window.Aura.remote.applyFromStore(active.config);
         }
+        /* 启动早期可能被别的模块覆盖回去，800ms 后再落一次（幂等） */
+        setTimeout(function () {
+          try {
+            var a2 = window.AuraCfg.loadActive();
+            window.__auraCfgActive = a2;
+            if (window.Aura.remote && window.Aura.remote.applyFromStore) {
+              window.Aura.remote.applyFromStore(a2.config);
+            }
+            var cl2 = $("cfg-line");
+            if (cl2 && a2 && a2.config) {
+              cl2.textContent = "配置 v" + a2.config.configVersion +
+                " · 来源 " + ({ active: "本地", scan: "本地(扫描)", bundled: "内置" }[a2.source] || a2.source) +
+                " · 资源 " + Object.keys(window.AuraCfg.ASSET_MAP).length + "/" +
+                Object.keys(window.AuraCfg.ASSET_MAP).length;
+            }
+          } catch (e) { }
+        }, 800);
         /* 设置页三项（132） */
         var cfgLine = $("cfg-line");
         if (cfgLine) {
