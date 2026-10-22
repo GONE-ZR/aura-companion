@@ -254,7 +254,7 @@ button:active,
   pointer-events: none;
 }
 
-#mask-layer {
+#veil-layer {
   position: fixed;
   inset: 0;
   z-index: -2;

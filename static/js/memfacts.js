@@ -215,11 +215,22 @@
   function parseExtraction(raw) {
     var txt = String(raw || "").trim();
     if (!txt) return [];
-    /* 容忍 ```json 包裹 */
-    var m = txt.match(/\[[\s\S]*\]/);
-    if (!m) return [];
-    var arr;
-    try { arr = JSON.parse(m[0]); } catch (e) { return []; }
+    /* 去掉 ```json 围栏 */
+    txt = txt.replace(/```json/gi, "```").replace(/```/g, "");
+    /* §2.5：json_object 模式返回的是 {"items":[...]}，也兼容直接给数组 */
+    var arr = null;
+    var objMatch = txt.match(/\{[\s\S]*\}/);
+    if (objMatch) {
+      try {
+        var obj = JSON.parse(objMatch[0]);
+        if (obj && Array.isArray(obj.items)) arr = obj.items;
+      } catch (e) { /* 继续试数组 */ }
+    }
+    if (!arr) {
+      var m = txt.match(/\[[\s\S]*\]/);
+      if (!m) return [];
+      try { arr = JSON.parse(m[0]); } catch (e) { return []; }
+    }
     if (!Array.isArray(arr)) return [];
     return arr.map(function (it) {
       if (!it || !it.fact) return null;

@@ -16,6 +16,9 @@
 <link rel="stylesheet" href="/static/css/emotion.css">
 <link rel="stylesheet" href="/static/css/second.css">
 <link rel="stylesheet" href="/static/css/comic.css">
+<link rel="stylesheet" href="/static/css/time.css">
+<link rel="stylesheet" href="/static/css/wide.css">
+<link rel="stylesheet" href="/static/css/keygate.css">
 <!-- 柔和流动主题（新增 · 不加 data-soft="1" 时零影响） -->
 <link rel="stylesheet" href="/static/css/theme-soft.css">
 </head>
@@ -23,7 +26,7 @@
 
 <!-- 壁纸层 → 蒙版层 → 柔光层 → 内容 -->
 <div id="wp-layer" aria-hidden="true"></div>
-<div id="mask-layer" aria-hidden="true"></div>
+<div id="veil-layer" aria-hidden="true"></div>
 <div id="glow-layer" aria-hidden="true">
   <div class="glow glow-a"></div>
   <div class="glow glow-b"></div>
@@ -101,13 +104,23 @@
       <p class="hint">直连＝手机自己调用模型，密钥只存在这台设备上，电脑关机也能用；
         服务器＝经过你自己部署的服务，朗读音色更好。</p>
     </div>
+    <div class="drawer-item" style="--i:1.5">
+      <label class="row" for="in-proxy"><span>代理地址（可选）</span></label>
+      <input id="in-proxy" class="txt" type="url" placeholder="https://xxx.workers.dev" autocomplete="off">
+      <div class="btn-row">
+        <button id="btn-proxy-save" class="btn primary">保存代理</button>
+        <button id="btn-proxy-clear" class="btn">清空</button>
+      </div>
+      <p class="hint">填了就走代理（包里没有密钥），不用再填 DeepSeek 密钥；两者留一个就行。</p>
+    </div>
     <div class="drawer-item" style="--i:1">
       <label class="row" for="in-key"><span>DeepSeek 密钥</span></label>
-      <input id="in-key" class="txt" type="password" placeholder="sk-..." autocomplete="off">
+      <input id="in-key" class="txt" type="password" placeholder="粘贴你的密钥" autocomplete="off">
       <div class="btn-row">
         <button id="btn-key-save" class="btn primary">保存密钥</button>
         <button id="btn-key-clear" class="btn">清除</button>
       </div>
+      <p id="key-state" class="hint">状态：未配置</p>
       <p class="hint">只存在这台设备上，不上传、不同步。</p>
     </div>
     <div class="drawer-item" style="--i:2">
@@ -240,6 +253,11 @@
       <p class="hint" id="model-adv-line">当前线路：主线路</p>
       <p class="hint">调试信息，普通使用不需要动这里。</p>
     </div>
+        <div class="drawer-item" style="--i:4.6">
+      <label class="row"><span>快捷键</span></label>
+      <div id="keys-list" class="keys-list"></div>
+      <p class="hint" id="keys-desktop-hint" hidden></p>
+    </div>
     <div class="drawer-item" style="--i:4" id="comic-row">
       <label class="row"><span>漫画风</span></label>
       <label class="row"><input id="in-comic" type="checkbox" checked>
@@ -350,8 +368,30 @@
 
 <div id="toast" hidden></div>
 
+<!-- ───────────── 填 Key 引导（无 Key 时唯一出口，不许出现"网络异常"） ───────────── -->
+<div id="keygate-scrim" hidden></div>
+<div id="keygate" role="dialog" aria-modal="true" aria-labelledby="keygate-title" hidden>
+  <div class="keygate-body">
+    <h3 id="keygate-title">还差一步</h3>
+    <p class="keygate-lead">需要填入 API Key 才能开始聊天。</p>
+    <input id="keygate-input" class="txt" type="password" placeholder="粘贴你的密钥" autocomplete="off" spellcheck="false">
+    <p class="keygate-hint">Key 只存在这台设备上，不上传、不外传；填一次就行，以后不用再填。</p>
+    <div class="btn-row">
+      <button id="keygate-later" class="btn">稍后</button>
+      <button id="keygate-save" class="btn primary">保存并开始</button>
+    </div>
+    <p id="keygate-err" class="keygate-err" hidden></p>
+  </div>
+</div>
+
+
 <script src="/static/js/idb.js"></script>
 <script src="/static/js/settings.js"></script>
+<script src="/static/js/timefmt.js"></script>
+<script src="/static/js/keys.js"></script>
+<script src="/static/js/notify.js"></script>
+<script src="/static/js/wide.js"></script>
+<script src="/static/js/records.js"></script>
 <script src="/static/js/cfgstore.js"></script>
 <script>fetch("/static/config.bundled.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j)window.AURA_CFG_BUNDLED=j;}).catch(function(){});</script>
 <script src="/static/js/engine.js"></script>

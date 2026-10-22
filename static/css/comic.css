@@ -42,23 +42,25 @@ body.comic[data-bg="dusk"] { background: var(--bg-dusk); }
 body.comic[data-bg="cool"] { background: var(--bg-cool); }
 body.comic[data-bg="gray"] { background: var(--bg-gray); }
 
-/* ---------------- ② 45° 网点：四档 ---------------- */
+/* ---------------- ② 45° 网点：四档（颜色 = 主色加深 20%，不用纯黑） ---------------- */
 body.comic::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -50%;                 /* 放大 + 旋转，保证四角不露白 */
   pointer-events: none;
   z-index: 0;
-  opacity: 1;
-  transition: opacity 500ms ease;
-  /* 45° + 1.5px 点；颜色 = 主色加深 20%（这里用半透明墨） */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cg transform='rotate(45 6 6)'%3E%3Ccircle cx='6' cy='6' r='1.5' fill='%23111' fill-opacity='0.22'/%3E%3C/g%3E%3C/svg%3E");
+  transform: rotate(45deg);
+  background-image: radial-gradient(circle at 50% 50%,
+      hsl(calc(var(--acc-h, 30) * 1deg) calc(var(--acc-s, 45) * 1%) calc(var(--acc-l, 62) * 1% - 20%)) 1.5px,
+      transparent 1.6px);
   background-size: 12px 12px;   /* 15% */
+  opacity: .55;
+  transition: opacity 500ms ease;
 }
 body.comic[data-dots="0"]::before { opacity: 0; }
-body.comic[data-dots="8"]::before { background-size: 20px 20px; opacity: .85; }
-body.comic[data-dots="15"]::before { background-size: 12px 12px; opacity: 1; }
-body.comic[data-dots="30"]::before { background-size: 7px 7px; opacity: 1; }
+body.comic[data-dots="8"]::before { background-size: 20px 20px; opacity: .42; }
+body.comic[data-dots="15"]::before { background-size: 12px 12px; opacity: .55; }
+body.comic[data-dots="30"]::before { background-size: 7px 7px; opacity: .68; }
 
 /* 夜晚：转深色平涂，网点改浅、密度降一档（不依赖深色开关） */
 body.comic[data-night="1"] {
@@ -76,7 +78,7 @@ body.comic #log > .msg .bubble {
   background: var(--paper) !important;
   border: 2px solid var(--ink) !important;
   box-shadow: none !important;         /* 漫画不用阴影 */
-  border-radius: 16px 7px 14px 9px / 9px 14px 7px 16px !important;   /* 不规则 */
+  border-radius: 16px 8px 14px 9px / 9px 14px 8px 16px !important;   /* 不规则 */
   position: relative;
   padding: 12px 15px;
   backdrop-filter: none !important;    /* 不要玻璃拟态 */

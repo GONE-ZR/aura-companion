@@ -44,13 +44,70 @@
     log.appendChild(e);
   }
 
-  function bubbleFor(msg) {
+  /* 时间戳元素（§1.2）：定长 + tabular-nums 由 CSS 保证不抖 */
+  function timeEl(ts) {
+    var t = el("div", "msg-time");
+    t.textContent = window.AuraTime ? window.AuraTime.hms(ts) : "";
+    t.setAttribute("datetime", window.AuraTime ? window.AuraTime.iso(ts) : "");
+    return t;
+  }
+
+  /* 日期分割条（§1.2）：今天 / 昨天 / 10月20日 / 2025年10月20日 */
+  function dayEl(ts) {
+    var d = el("div", "day-sep");
+    d.textContent = window.AuraTime ? window.AuraTime.dayLabel(ts) : "";
+    return d;
+  }
+
+  /* 长按看完整时间（轻量浮层，点外部关闭） */
+  var timeTip = null;
+  function showTimeTip(target, ts) {
+    hideTimeTip();
+    var tip = el("div", "time-tip");
+    tip.textContent = window.AuraTime ? window.AuraTime.full(ts) : "";
+    document.body.appendChild(tip);
+    var r = target.getBoundingClientRect();
+    var w = 170;
+    var left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+    tip.style.left = left + "px";
+    tip.style.top = Math.max(8, r.top - 44) + "px";
+    timeTip = tip;
+    setTimeout(function () {
+      document.addEventListener("pointerdown", hideTimeTip, { once: true });
+    }, 30);
+  }
+  function hideTimeTip() {
+    if (timeTip && timeTip.parentNode) timeTip.parentNode.removeChild(timeTip);
+    timeTip = null;
+  }
+
+  function bubbleFor(msg, prev) {
     var wrap = el("div", "msg " + (msg.role === "me" ? "me" : "ai"));
+    if (window.AuraTime && window.AuraTime.shouldShow(msg.ts, prev && prev.ts)) {
+      wrap.appendChild(timeEl(msg.ts));
+    }
     var b = el("div", "bubble");
     var body = el("div", "bubble-text");
     body.textContent = msg.content || "";
     b.appendChild(body);
     wrap.appendChild(b);
+
+    /* 长按 550ms → 显示这条的完整时间（绑在整组上，多气泡也生效） */
+    var pressTimer = null;
+    function clearPress() {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    }
+    wrap.addEventListener("pointerdown", function () {
+      clearPress();
+      pressTimer = setTimeout(function () {
+        pressTimer = null;
+        showTimeTip(wrap, msg.ts);
+      }, 550);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) {
+      wrap.addEventListener(ev, clearPress);
+    });
+    wrap.addEventListener("pointermove", clearPress);
 
     var img = transientImg[msg.id];
     if (img) {
@@ -83,14 +140,29 @@
     if (!log) return;
     log.textContent = "";
     if (!messages.length) { renderEmpty(); return; }
-    messages.forEach(function (m) { log.appendChild(bubbleFor(m)); });
+    var prev = null;
+    messages.forEach(function (m) {
+      if (!(window.AuraTime && window.AuraTime.sameDay(m.ts, prev && prev.ts))) {
+        log.appendChild(dayEl(m.ts));
+      }
+      log.appendChild(bubbleFor(m, prev));
+      prev = m;
+    });
     scrollToEnd(true);
   }
 
   function appendMessage(msg, animate) {
     if (!log) return;
     if (log.querySelector(".empty-state")) log.textContent = "";
-    var node = bubbleFor(msg);
+    /* 找前一条（决定要不要显示时间戳 / 日期条） */
+    var prev = null;
+    for (var i = 0; i < messages.length; i++) {
+      if (messages[i].id === msg.id) { prev = i > 0 ? messages[i - 1] : null; break; }
+    }
+    if (!(window.AuraTime && window.AuraTime.sameDay(msg.ts, prev && prev.ts))) {
+      log.appendChild(dayEl(msg.ts));
+    }
+    var node = bubbleFor(msg, prev);
     if (!animate) node.classList.add("no-anim");
     log.appendChild(node);
     return node;
@@ -216,7 +288,7 @@
   }
 
   function isDirect() {
-    return cfg.mode === "direct" && !!cfg.apiKey;
+    return cfg.mode !== "server" && hasChannel();
   }
 
   /* ---------------- 情绪引擎状态（本地持久化） ---------------- */
@@ -321,6 +393,28 @@
   var DS_URL = "https://api.deepseek.com/v1/chat/completions";
   var DS_MODEL = "deepseek-flash";
 
+  /* ---------------- 网络通道（本轮定案：代理优先，直连兜底） ----------------
+     ① Cloudflare Workers 代理：包里零密钥，可公开下载；地址可热更新
+     ② 用户自己填 Key：直连 DeepSeek
+     ③ 明确选了"服务器"（旧模式，只在电脑上调试时用）：走 /api/chat/stream
+     缺通道时**绝不静默掉回本机服务** —— 在 APK 里那是 https://localhost，必然失败。 */
+  function chatProxy() {
+    try {
+      var p = S.getStr("aura_chat_proxy", "");
+      if (!p && window.AuraCfg) {
+        var a = window.AuraCfg.loadActive();
+        p = (a && a.config && a.config.net && a.config.net.chatProxy) || "";
+      }
+      return p ? String(p).trim().replace(/\/+$/, "") : "";
+    } catch (e) { return ""; }
+  }
+  function proxyUrl(path) {
+    var p = chatProxy();
+    return p ? (p + path) : "";
+  }
+  function hasChannel() { return !!(cfg.apiKey || chatProxy()); }
+
+
   /* ---------------- 第四篇：模型层（白名单 + 参数 + 思考必须关） ---------------- */
   var MODELS = {
     standard: { id: "deepseek-flash", temp: 1.25, maxTokens: 300 },
@@ -353,28 +447,34 @@
       msgs.push({ role: m.role, content: content });
     });
     var prof = useFallback ? FALLBACK : modelProfile(tier());
-    return {
+    var wantStream = payload.stream !== false;
+    var out = {
       model: prof.id,
       /* §3.2：主对话每轮必须显式关闭思考模式，否则首行标签必被破坏 */
       thinking: { type: "disabled" },
       messages: msgs,
-      temperature: prof.temp,
-      max_tokens: prof.maxTokens,
-      stream: true,
-      stream_options: { include_usage: true }
+      temperature: (typeof payload.temperature === "number") ? payload.temperature : prof.temp,
+      max_tokens: payload.max_tokens || prof.maxTokens,
+      stream: wantStream
     };
+    if (wantStream) out.stream_options = { include_usage: true };
+    if (payload.response_format) out.response_format = payload.response_format;
+    return out;
   }
 
   /* 连续 fallback 计数（第四篇 §8：连续 3 轮后设置页出现"当前使用备用线路"） */
   var fallbackStreak = 0;
 
   function directRequest(payload, useFallback, signal) {
-    return fetch(DS_URL, {
+    /* 有代理就走代理（Key 在 Workers 里，客户端不带 Authorization）；
+       没代理才直连 DeepSeek（用户自己填的 Key） */
+    var viaProxy = !!chatProxy();
+    var url = viaProxy ? proxyUrl("/chat") : DS_URL;
+    var headers = { "Content-Type": "application/json" };
+    if (!viaProxy) headers["Authorization"] = "Bearer " + cfg.apiKey;
+    return fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + cfg.apiKey
-      },
+      headers: headers,
       body: JSON.stringify(buildDirectPayload(payload, useFallback)),
       signal: signal
     });
@@ -428,6 +528,12 @@
 
   /* ---------------- 安全层：命中后这一轮不走人设（§八） ---------------- */
   function renderSafetyTurn(userText, safety) {
+    /* §3.2：命中就立刻掐掉正在跑的生成/搜索，不许两边同时说话 */
+    try {
+      if (activeController) { activeController.abort(); activeController = null; }
+    } catch (e) { /* ignore */ }
+    setBusy(false);
+
     var meMsg = { id: nowId(), role: "me", content: userText, ts: Date.now() };
     messages.push(meMsg);
     appendMessage(meMsg, false);
@@ -478,6 +584,10 @@
 
   /* ---------------- 没密钥时的引导 ---------------- */
   function noKeyHint() {
+    /* §1.2：优先用"填 Key"引导层（有输入框、能当场保存），而不是只弹一句 toast */
+    if (window.Aura && window.Aura.showKeyGate) {
+      try { window.Aura.showKeyGate(); return; } catch (e) { /* 退回气泡提示 */ }
+    }
     if (window.Aura.ui && window.Aura.ui.toast) {
       window.Aura.ui.toast("还没填 DeepSeek 密钥，先填一下");
     }
@@ -491,7 +601,7 @@
       inner.className = "bubble";
       var txt = document.createElement("div");
       txt.className = "bubble-text";
-      txt.textContent = "还没填密钥，所以我发不出去。点右上角设置 → 连接 → 填「DeepSeek 密钥」，填完就能聊了。";
+      txt.textContent = "还没填密钥，所以我发不出去。点右上角设置 → 连接 → 填「DeepSeek 密钥」，或者填「代理地址」，两者留一个就行，填完就能聊了。";
       inner.appendChild(txt);
       box.appendChild(inner);
       log.appendChild(box);
@@ -523,9 +633,9 @@
     var hasImg = !!pendingImg;
     if (!text && !hasImg) return;
 
-    /* 没有密钥又选了"手机直连"：APK 里没有服务器，硬发必然失败 ——
-       不如直接把原因说清楚，并把设置里的密钥那一栏推到眼前。 */
-    if (cfg.mode !== "server" && !cfg.apiKey) {
+    /* §1.1 红线：不管 mode 是什么，只要既没有 Key 也没有代理，就**一条请求都不发**。
+       APK 里的同源是 https://localhost，发出去必然失败，而且不会报错 —— 那是最坏的情况。 */
+    if (!hasChannel()) {
       noKeyHint();
       return;
     }
@@ -629,25 +739,27 @@
     var controller = ("AbortController" in window) ? new AbortController() : null;
     activeController = controller;
 
-    var req = isDirect()
-      ? requestWithFallback(payload, controller ? controller.signal : undefined).then(function (res) {
-          /* 直连模式没有本地服务器做图片块转换，这里自己补一次 */
-          return res;
-        })
-      : fetch("/api/chat/stream", {
-          method: "POST",
-          headers: apiHeaders(),
-          body: JSON.stringify(payload),
-          signal: controller ? controller.signal : undefined
-        }).catch(function (err) {
-          /* 保险：选的是"走服务器"但服务器连不上（典型场景：电脑关机了）。
-             只要本机有密钥，就自动退回直连，别让用户卡在这儿。 */
-          if (cfg.apiKey) {
-            try { toast("连不上服务，改走直连"); } catch (e) { }
-            return requestWithFallback(payload);
-          }
-          throw err;
-        });
+    var req;
+    if (cfg.mode === "server") {
+      /* 只在用户明确选了"走服务器"时才走本机服务（电脑上调试用） */
+      req = fetch("/api/chat/stream", {
+        method: "POST",
+        headers: apiHeaders(),
+        body: JSON.stringify(payload),
+        signal: controller ? controller.signal : undefined
+      }).catch(function (err) {
+        if (hasChannel()) {
+          try { toast("连不上服务，改走直连"); } catch (e) { }
+          return requestWithFallback(payload);
+        }
+        throw err;
+      });
+    } else if (hasChannel()) {
+      req = requestWithFallback(payload, controller ? controller.signal : undefined);
+    } else {
+      /* 没代理也没 Key：明确报"没配好"，**不许**掉回 /api/chat/stream（APK 里必挂） */
+      req = Promise.reject(new Error("NO_CHANNEL"));
+    }
 
     req.then(function (res) {
       if (!res.ok) {
@@ -843,6 +955,19 @@
       bubble.classList.remove("thinking");
       if (think && think.parentNode) think.parentNode.removeChild(think);
       if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
+
+      /* 没有任何可用通道（既没配代理，也没填 Key）→ 明确告诉人怎么修，不许假装网络问题 */
+      if (msg.indexOf("NO_CHANNEL") >= 0) {
+        body.textContent = "还没连上模型。去「设置 → 连接方式」填 API Key，或者让我连代理，二选一就行。";
+        aiMsg.content = body.textContent;
+        aiMsg.bubbleCount = 1;
+        messages.push(aiMsg);
+        window.Aura.messages.save(messages);
+        scrollToEnd(false);
+        setBusy(false);
+        try { toast("先在设置里填 Key 或代理地址"); } catch (e) { }
+        return;
+      }
 
       /* 第六篇 §2：断网 → 用本地短句回一句（不弹"网络异常"、不解释原因） */
       if (window.AuraOffline && window.AuraOffline.looksOffline(err)) {
@@ -1065,6 +1190,8 @@
   }
 
   function extractMemories() {
+    /* §1.4：没有 Key 也没有代理 → 这次不抽（静默跳过，不报错、不阻塞对话） */
+    if (!hasChannel()) return;
     var recent = messages.slice(-14).map(function (m) {
       return (m.role === "me" ? "用户：" : "小纯：") + m.content;
     }).join("\n");
@@ -1072,31 +1199,42 @@
     var body = {
       system_prompt: window.AuraPrompt.EXTRACT_PROMPT,
       messages: [{ role: "user", content: recent }],
-      temperature: 0.2,
-      max_tokens: 600
+      temperature: 0,                                  /* §2.5：抽取要确定性 */
+      max_tokens: 600,
+      stream: false,                                   /* 抽取不流式（之前硬写成流式 → res.json() 必挂） */
+      response_format: { type: "json_object" }         /* §2.5：强制 JSON 输出 */
     };
-    var run = isDirect()
-      ? directRequest(Object.assign({}, body, { stream: false }))
-      : fetch("/api/chat", {
-          method: "POST",
-          headers: apiHeaders(),
-          body: JSON.stringify(body)
-        });
-    run.then(function (res) {
+
+    function once() {
+      if (hasChannel()) return directRequest(Object.assign({}, body));
+      return Promise.reject(new Error("NO_CHANNEL"));
+    }
+
+    function contentOf(d) {
+      return (d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || "";
+    }
+
+    once().then(function (res) {
       if (!res.ok) throw new Error("http" + res.status);
       return res.json();
     }).then(function (d) {
-      var txt = (d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || "";
+      var txt = contentOf(d);
+      if (!txt || !txt.trim()) return Promise.reject(new Error("empty"));   /* 空 content → 重试一次 */
+      return txt;
+    }).catch(function () {
+      /* §2.5：空 content / 失败 → 重试 1 次；再失败就放行（不弹窗、不阻塞对话） */
+      return once().then(function (res) {
+        return res.ok ? res.json() : null;
+      }).then(function (d) {
+        return contentOf(d);
+      }).catch(function () { return ""; });
+    }).then(function (txt) {
+      if (!txt || !txt.trim()) return;                                      /* 放行成普通对话 */
       var items = window.AuraMemfacts.parseExtraction(txt);
       if (items.length) {
         window.AuraMemfacts.add(items);
         bus.emit("memory:added", items);
       }
-    }).catch(function () {
-      /* 失败静默重试一次，再失败就丢掉（§九） */
-      setTimeout(function () {
-        run.length; /* 占位，避免 lint */
-      }, 0);
     });
   }
 

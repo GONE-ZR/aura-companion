@@ -49,6 +49,55 @@
 
 ### 规则（从本次起生效）
 
+
+
+### 代理部署 + 额度硬上限（2026-10-23）
+
+代理代码在 `workers/chat-proxy.js`（Cloudflare Workers，免费版即可）。
+
+**为什么要额度上限**：代理地址跟着公开 APK 一起公开，等于一个公开入口。
+DeepSeek 后台没有「按单个 key 每日限额」这种开关，所以**唯一可靠的硬兜底在代理这一层**。
+
+**部署步骤**
+1. dash.cloudflare.com → Workers & Pages → Create → Worker → 粘贴 `workers/chat-proxy.js` → Deploy
+2. Settings → Variables and Secrets：
+   - `DEEPSEEK_KEY` = sk-…（类型选 **Secret**）
+   - `DAILY_LIMIT` = 800（每天最多请求次数，按自己用量定）
+   - `MAX_TOKENS` = 800（单次回复上限，防止被刷长文）
+   - `ALLOW_ORIGIN` = `*`（或写死 `https://localhost`）
+3. 绑定 KV（额度计数）：Storage & Databases → KV → Create namespace `aura-quota`
+   → 回 Worker → Settings → Bindings → KV Namespace，变量名 `AURA_KV`，选中 `aura-quota`
+   （不绑也能跑，但那就**没有额度上限**，不建议）
+4. 记住地址 `https://xxx.xxx.workers.dev`，填到手机「设置 → 代理地址」，
+   或写进 `remote/config.json` 的 `net.chatProxy`（可热更新，不用重打包）
+
+**额度自检**：浏览器打开 `https://xxx.workers.dev/usage` → `{"used":12,"limit":800,"left":788}`；
+超过上限后 `/chat` 直接返回 429，APP 会提示额度用完，不会再消耗 DeepSeek 余额。
+
+**DeepSeek 后台还要做的两件事（减少意外扣费）**
+- 关闭「自动充值」/ 只留小额余额，别放太多钱
+- 定期在 platform.deepseek.com 的用量页看 `deepseek-flash` 的消耗
+
+> ⚠️ DeepSeek 后台是否提供「每日额度上限」这项设置：**需实测**
+> （以后台实际界面为准，小纯没有该账号界面可核对）。
+> 因此**不要把额度安全寄托在平台侧**，以代理层的 `DAILY_LIMIT` 为准。
+
+### 无 Key 时的行为（本轮定死）
+
+- 有代理 → 走代理（包里零密钥）
+- 没代理但有 Key → 直连 DeepSeek
+- 两者都没有 → **不发任何请求**，直接提示「填密钥或者填代理地址」，
+  **绝不**再偷偷请求 `/api/chat/stream`（APK 里那是 `https://localhost`，必然失败）
+
+### 密钥与代理（2026-10-23 定案）
+
+- **默认通道：Cloudflare Workers 代理**。Key 只存在 Workers 环境变量里，**APK 包内零密钥**，可公开下载 + 自动更新。
+- 代理地址写进 
+emote/config.json 的 
+et.chatProxy，可热更新，换代理不用重打包。
+- **兜底通道：用户自己填 Key 直连** https://api.deepseek.com/v1/chat/completions（localStorage ura_api_key，永不上传）。
+- **禁止**：把 Key 写进任何仓库文件、日志、崩溃上报；也禁止注进公开分发的 APK（等于公开）。
+
 > **新功能一律按 Web 栈实现，禁止混入 RN API**（不出现 `react-native`、`expo-*`、worklet）。
 > 视觉数值照第三篇，但实现手段用 CSS / Canvas / SVG。
 

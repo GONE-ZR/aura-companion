@@ -1,0 +1,202 @@
+/* ============================================================
+   wide.css —— 电脑网页端宽屏双栏（≥768px）
+   规格（本轮 §2.1）
+     · ≥768px 双栏：左栏 280~320px（可拖到 420），右栏主界面
+     · <768px 保持单列，左栏完全不出现（display:none，不占 DOM 布局）
+     · 分栏宽度记住（localStorage: aura_wide_left）
+     · 左栏内容：置顶 ≤3 / 最近活跃 / 已归档入口
+     · 全局红线：切换会话「换筐不换人」—— 这里只切数据，不碰情绪/立绘
+   ============================================================ */
+
+#wide-left,
+#wide-resize,
+#wide-scrim { display: none; }
+
+@media (min-width: 768px) {
+  body.wide {
+    padding-left: var(--wl, 300px);
+    box-sizing: border-box;
+  }
+
+  /* 顶部栏是 fixed，要跟着左栏让位 */
+  body.wide #top,
+  body.wide .top {
+    left: var(--wl, 300px);
+  }
+
+  #wide-left {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--wl, 300px);
+    box-sizing: border-box;
+    z-index: 45;
+    background: var(--surface, #fff);
+    border-right: 1px solid var(--line, rgba(0, 0, 0, .08));
+    padding: 10px 0 8px;
+    overflow: hidden;
+  }
+
+  /* 拖动条：8px 热区，视觉上只有 1px 线 */
+  #wide-resize {
+    display: block;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--wl, 300px) - 4px);
+    width: 9px;
+    z-index: 46;
+    cursor: col-resize;
+    background: transparent;
+  }
+  #wide-resize:hover,
+  #wide-resize.drag { background: rgba(0, 0, 0, .06); }
+}
+
+/* ---------- 左栏内部 ---------- */
+#wide-left .wl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 14px 10px;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-dim, #6B6B6B);
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+#wide-left .wl-new {
+  border: 1px solid var(--line, rgba(0, 0, 0, .12));
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+#wide-left .wl-new:hover { background: rgba(0, 0, 0, .04); }
+
+#wide-left .wl-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 6px;
+}
+
+#wide-left .wl-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+#wide-left .wl-item:hover { background: rgba(0, 0, 0, .035); }
+#wide-left .wl-item.on {
+  background: rgba(0, 0, 0, .055);
+  border-color: rgba(0, 0, 0, .08);
+}
+
+#wide-left .wl-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--text, #222);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#wide-left .wl-pin {
+  font-size: 10px;
+  color: var(--text-dim, #6B6B6B);
+  flex: none;
+}
+
+#wide-left .wl-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-dim, #6B6B6B);
+  line-height: 1.35;
+}
+#wide-left .wl-last {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#wide-left .wl-time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  width: 5.6em;                 /* 定宽：秒数跳动不抖 */
+  text-align: right;
+}
+
+#wide-left .wl-arch {
+  margin: 6px 10px 0;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, .08));
+  font-size: 12px;
+  color: var(--text-dim, #6B6B6B);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+#wide-left .wl-arch:hover { color: var(--text, #222); }
+
+#wide-left .wl-empty {
+  padding: 18px 14px;
+  font-size: 12.5px;
+  color: var(--text-dim, #6B6B6B);
+  line-height: 1.8;
+}
+
+/* 深色模式 */
+body[data-theme="dark"] #wide-left { background: #22262B; border-right-color: rgba(255, 255, 255, .08); }
+body[data-theme="dark"] #wide-left .wl-item:hover { background: rgba(255, 255, 255, .045); }
+body[data-theme="dark"] #wide-left .wl-item.on { background: rgba(255, 255, 255, .07); }
+body[data-theme="dark"] #wide-left .wl-title { color: #E8E6E1; }
+body[data-theme="dark"] #wide-left .wl-sub,
+body[data-theme="dark"] #wide-left .wl-time,
+body[data-theme="dark"] #wide-left .wl-head,
+body[data-theme="dark"] #wide-left .wl-arch { color: #A9A6A0; }
+
+/* 漫画风下：左栏也是纸色，但不加网点（网点只在主界面背景） */
+body.comic #wide-left {
+  background: #FDFBF4 !important;
+  border-right: 2px solid #111 !important;
+}
+body.comic[data-night="1"] #wide-left {
+  background: #2A2E33 !important;
+  border-right-color: #E8E6E1 !important;
+}
+
+/* ---------- 设置页：快捷键一览 ---------- */
+.keys-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
+.keys-row { display: flex; align-items: baseline; gap: 10px; font-size: 13px; line-height: 1.6; }
+.keys-row kbd {
+  flex: none;
+  min-width: 118px;
+  padding: 1px 7px;
+  border: 1px solid var(--line, rgba(0, 0, 0, .16));
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  text-align: center;
+  color: var(--text, #222);
+  background: rgba(0, 0, 0, .03);
+}
+.keys-row span { color: var(--text-dim, #6B6B6B); }
+body[data-theme="dark"] .keys-row kbd { color: #E8E6E1; border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+body[data-theme="dark"] .keys-row span { color: #A9A6A0; }

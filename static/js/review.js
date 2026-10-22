@@ -157,8 +157,10 @@
     page.appendChild(sec2);
 
 
-    /* ---- 已删除（回收站）：只显示名字与时间，不显示内容 ---- */
-    if (window.AuraRecycle) {
+    /* ---- 已删除（回收站）：只显示名字与时间，不显示内容 ----
+       ★ 唯一真相是 records 的 deletedAt（不是 recycle.js 那张"只有名字"的表）。
+         回收站必须能「恢复」和「彻底删除」，否则删了就既找不回也清不掉。 */
+    if (window.AuraRecords) {
       var sec4 = document.createElement("div");
       sec4.style.cssText = "margin-top:26px";
       var t4 = document.createElement("div");
@@ -166,31 +168,48 @@
       t4.textContent = "已删除";
       sec4.appendChild(t4);
 
-      var trash = window.AuraRecycle.list();
+      var trash = window.AuraRecords.trash();
       if (!trash.length) {
         var e4 = document.createElement("div");
         e4.style.cssText = "font-size:13px;color:var(--dim,#6b665d);line-height:1.9";
-        e4.textContent = "没有删掉的东西。";
+        e4.textContent = "没有已删除的东西。";
         sec4.appendChild(e4);
       }
-      trash.slice().reverse().forEach(function (it) {
+      trash.forEach(function (it) {
         var row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.07)";
+        row.style.cssText = "display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.07)";
+
         var name = document.createElement("div");
         name.style.cssText = "flex:1;font-size:14px";
         /* 只有名字 + 删除日期，绝不放内容 */
-        var d = new Date(it.deletedAt);
-        name.textContent = it.label + "　" + (d.getMonth() + 1) + "月" + d.getDate() + "日删除";
+        var dLabel = (window.AuraTime ? window.AuraTime.dayLabel(it.deletedAt) : "") || "";
+        name.textContent = it.title + "　" + dLabel + "删除";
+
+        var n = window.AuraRecords.rawMessages(it.id).length;   /* 真删的条数（含软删的） */
+        var rbtn = document.createElement("button");
+        rbtn.className = "btn";
+        rbtn.textContent = "恢复";
+        rbtn.style.cssText = "font-size:12px;padding:5px 10px";
+        rbtn.onclick = function () {
+          window.AuraRecords.restoreSession(it.id);
+          row.remove();
+          toast("已恢复");
+          if (typeof window.__auraRefreshReview === "function") window.__auraRefreshReview();
+        };
+
         var del = document.createElement("button");
         del.className = "btn";
         del.textContent = "彻底删除";
         del.style.cssText = "font-size:12px;padding:5px 10px";
         del.onclick = function () {
-          if (!window.confirm("彻底删除后不可恢复，确定？")) return;
-          window.AuraRecycle.purge(it.id);
+          if (!window.confirm("这个会话的 " + n + " 条消息会被永久删除，无法恢复。确定？")) return;
+          window.AuraRecords.hardDeleteSession(it.id);
           row.remove();
+          toast("已彻底删除");
         };
+
         row.appendChild(name);
+        row.appendChild(rbtn);
         row.appendChild(del);
         sec4.appendChild(row);
       });

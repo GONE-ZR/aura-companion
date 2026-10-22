@@ -1,0 +1,75 @@
+/* ============================================================
+   time.css —— 时间显示（App 端）
+   规格（本轮 §1.2）
+     · HH:mm:ss，等宽数字，定长 → 秒数跳动时整行宽度不抖
+     · 日期分割条：12pt、#6B6B6B、系统字体、无描边无网点
+     · 深色模式对比度 ≥ 4.5:1
+     · 长按浮层：轻量、无描边无网点
+   ============================================================ */
+
+/* 定宽 + 等宽数字：5.4em ≈ 8 个字符（HH:mm:ss） */
+#log .msg-time {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #6B6B6B;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.02em;
+  width: 5.6em;                 /* 定长，不许随内容变 */
+  text-align: center;
+  margin: 12px auto 3px;
+  user-select: none;
+}
+
+/* 自己的消息：时间贴右边，但仍对齐同一列宽 */
+#log .msg.me .msg-time {
+  text-align: right;
+  margin-right: 4px;
+  margin-left: auto;
+}
+
+/* 日期分割条 */
+#log .day-sep {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6B6B6B;
+  text-align: center;
+  margin: 20px auto 8px;
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+
+/* 深色模式：提亮到 #A9A6A0（对 #2A2E33 约 5.4:1） */
+body[data-theme="dark"] #log .msg-time,
+body[data-theme="dark"] #log .day-sep,
+body.comic[data-night="1"] #log .msg-time,
+body.comic[data-night="1"] #log .day-sep {
+  color: #A9A6A0;
+}
+
+/* 长按浮层：纯系统字体，不参与漫画风 */
+.time-tip {
+  position: fixed;
+  z-index: 70;
+  min-width: 170px;
+  padding: 7px 10px;
+  background: #1F1D1A;
+  color: #F7F5F1;
+  border-radius: 8px;
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* 时间戳绝不进气泡内部、也不描边 */
+body.comic #log .msg-time,
+body.comic #log .day-sep {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}

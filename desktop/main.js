@@ -4,7 +4,7 @@
    · /api/chat 与 /api/chat/stream 由主进程直连 DeepSeek（不依赖服务器在线）
    · API Key 用 safeStorage 加密后存在 userData/config.json
    ============================================================ */
-const { app, BrowserWindow, ipcMain, safeStorage, dialog, session } = require("electron");
+const { app, BrowserWindow, ipcMain, safeStorage, dialog, session, Tray, Menu, globalShortcut } = require("electron");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -534,6 +534,70 @@ function askForKey(parent) {
   });
 }
 
+
+/* ---------------- 托盘 + 全局快捷键（第二部分 §2.3） ----------------
+   · 关闭窗口 → 收进托盘，不退出（首次会提示一次；可在 config.json 里关掉）
+   · 托盘菜单：打开 / 新建话题 / 退出
+   · 全局快捷键默认 Ctrl+Shift+A，可在 config.json 里改或关掉
+   · 浏览器环境不会有这些代码（只在 Electron 主进程里）
+*/
+let tray = null;
+let trayHinted = false;
+
+function desktopPrefs() {
+  try {
+    const cfg = readConfigFile ? readConfigFile() : {};
+    return {
+      closeToTray: cfg.closeToTray !== false,
+      globalShortcut: typeof cfg.globalShortcut === "string" ? cfg.globalShortcut : "Control+Shift+A"
+    };
+  } catch (e) {
+    return { closeToTray: true, globalShortcut: "Control+Shift+A" };
+  }
+}
+
+function showWindow() {
+  if (!win || win.isDestroyed()) { createWindow(); return; }
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
+function createTray() {
+  if (tray) return;
+  try {
+    tray = new Tray(path.join(__dirname, "build", "icon.png"));
+    tray.setToolTip("安静陪伴");
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: "打开", click: showWindow },
+      {
+        label: "新建话题",
+        click: () => {
+          showWindow();
+          if (win && !win.isDestroyed()) {
+            win.webContents.executeJavaScript(
+              "(window.Aura && window.Aura.features && window.Aura.features.newSession) && window.Aura.features.newSession();"
+            ).catch(() => { });
+          }
+        }
+      },
+      { type: "separator" },
+      { label: "退出", click: () => { app.isQuitting = true; app.quit(); } }
+    ]));
+    tray.on("click", showWindow);
+    tray.on("double-click", showWindow);
+  } catch (e) { /* 没有图标也不许崩 */ }
+}
+
+function registerGlobalShortcut() {
+  const prefs = desktopPrefs();
+  if (!prefs.globalShortcut) return;
+  try {
+    const ok = globalShortcut.register(prefs.globalShortcut, showWindow);
+    console.log("[tray] 全局快捷键", prefs.globalShortcut, ok ? "已注册" : "被占用");
+  } catch (e) { /* ignore */ }
+}
+
 /* ---------------- 窗口 ---------------- */
 function createWindow() {
   win = new BrowserWindow({
@@ -553,6 +617,20 @@ function createWindow() {
     }
   });
   win.loadURL("http://127.0.0.1:" + PORT + "/");
+  win.on("close", (e) => {
+    const prefs = desktopPrefs();
+    if (!prefs.closeToTray || app.isQuitting) return;
+    e.preventDefault();
+    win.hide();
+    if (!trayHinted) {
+      trayHinted = true;
+      try {
+        if (tray && tray.displayBalloon) {
+          tray.displayBalloon({ title: "还在后台", content: "窗口收进托盘了，点托盘图标可以再打开。" });
+        }
+      } catch (err) { }
+    }
+  });
   win.on("closed", () => { win = null; });
 }
 
@@ -560,6 +638,8 @@ function createWindow() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  app.on("will-quit", () => { try { globalShortcut.unregisterAll(); } catch (e) { } });
+
   app.on("second-instance", () => {
     if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
   });
@@ -582,6 +662,9 @@ if (!app.requestSingleInstanceLock()) {
     } else {
       createWindow();
     }
+
+    createTray();
+    registerGlobalShortcut();
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

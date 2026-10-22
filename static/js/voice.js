@@ -1163,7 +1163,7 @@
         lines.push("运行环境：" + envName());
         lines.push("网络：" + (navigator.onLine === false ? "离线" : "在线"));
         lines.push("语音合成：" + (window.speechSynthesis ? "浏览器自带可用" : "不可用"));
-        lines.push("生成时间：" + new Date().toLocaleString());
+        lines.push("生成时间：" + (window.AuraTime ? window.AuraTime.full(Date.now()) : ""));
         return lines.join("\n");
       });
     }).catch(function (e) {

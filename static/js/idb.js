@@ -21,17 +21,25 @@
   "use strict";
 
   var DB_NAME = "aura";
-  var DB_VERSION = 1;
+  var DB_VERSION = 2;                    /* v2：给 messages / sessions 补 deletedAt 索引（软删除） */
   var SUPPORTED_SCHEMA = 1;
   var STORES = {
-    messages: { keyPath: "id", indexes: [["sessionId", "sessionId"], ["createdAt", "ts"]] },
-    sessions: { keyPath: "id", indexes: [["lastMessageAt", "lastMessageAt"]] },
+    messages: { keyPath: "id", indexes: [["sessionId", "sessionId"], ["createdAt", "ts"], ["deletedAt", "deletedAt"]] },
+    sessions: { keyPath: "id", indexes: [["lastMessageAt", "lastMessageAt"], ["deletedAt", "deletedAt"]] },
     memories: { keyPath: "id", indexes: [["status", "status"]] },
     lifeEvents: { keyPath: "id", indexes: [["date", "date"]] },
     openLoops: { keyPath: "id", indexes: [["openedAt", "openedAt"]] },
     config: { keyPath: "key", indexes: [] },
     meta: { keyPath: "key", indexes: [] }
   };
+
+  /* 失败不再无声无息：同一种错误只警告一次，避免刷屏 */
+  var warned = {};
+  function warnOnce(kind, msg) {
+    if (warned[kind]) return;
+    warned[kind] = true;
+    try { console.warn("[idb] " + kind + "：" + msg + "（已退回 localStorage，不影响使用）"); } catch (e) { }
+  }
 
   var db = null;
   var state = { readOnly: false, migrated: false, lastError: null };
@@ -43,18 +51,43 @@
     return new Promise(function (resolve, reject) {
       if (typeof indexedDB === "undefined") return reject(new Error("no-indexeddb"));
       var req = indexedDB.open(DB_NAME, DB_VERSION);
+      /* 版本升级时若别的标签页还占着旧版本，open 会一直挂（blocked）。
+         这里给 3 秒硬超时：宁可退回 localStorage，也不许让 App 卡在启动。 */
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error("idb-open-timeout"));
+      }, 3000);
+      req.onblocked = function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(new Error("idb-blocked"));
+      };
       req.onupgradeneeded = function (ev) {
         var d = ev.target.result;
         Object.keys(STORES).forEach(function (name) {
-          if (d.objectStoreNames.contains(name)) return;
           var cfg = STORES[name];
-          var os = d.createObjectStore(name, { keyPath: cfg.keyPath });
+          var os;
+          if (d.objectStoreNames.contains(name)) {
+            /* 已存在的表：补索引（v1 → v2 就是靠这里加 deletedAt 索引） */
+            os = ev.target.transaction.objectStore(name);
+          } else {
+            os = d.createObjectStore(name, { keyPath: cfg.keyPath });
+          }
           (cfg.indexes || []).forEach(function (pair) {
-            os.createIndex(pair[0], pair[1], { unique: false });
+            if (!os.indexNames.contains(pair[0])) {
+              os.createIndex(pair[0], pair[1], { unique: false });
+            }
           });
         });
       };
-      req.onsuccess = function (ev) { db = ev.target.result; resolve(db); };
+      req.onsuccess = function (ev) {
+        settled = true; clearTimeout(timer);
+        db = ev.target.result;
+        resolve(db);
+      };
       req.onerror = function () { reject(req.error || new Error("idb-open-failed")); };
     });
   }
@@ -70,7 +103,11 @@
         r.onsuccess = function () { res(true); };
         r.onerror = function () { rej(r.error); };
       });
-    }).catch(function (e) { state.lastError = String(e && e.message || e); return false; });
+    }).catch(function (e) {
+      state.lastError = String(e && e.message || e);
+      warnOnce("write", state.lastError);
+      return false;
+    });
   }
 
   function getAll(store) {
@@ -80,7 +117,10 @@
         r.onsuccess = function () { res(r.result || []); };
         r.onerror = function () { res([]); };
       });
-    }).catch(function () { return []; });
+    }).catch(function (e) {
+      warnOnce("read", String(e && e.message || e));
+      return [];
+    });
   }
 
   function count(store) {
@@ -210,6 +250,62 @@
     }).catch(function () { return { version: 0, readOnly: false }; });
   }
 
+  /* ---------------- 切换（§1.3 · 调整版）：不立即删，保留 30 天做备份 ----------------
+     校验通过后只记录「到期时间」，到期（且再次校验通过）才真正清掉旧 key。
+     这样 localStorage 与 IndexedDB 同时有数据 = 双保险，而不是降低冗余。 */
+  var RETENTION_DAYS = 30;
+
+  function cutover() {
+    if (!report.ok) return Promise.resolve({ skipped: "not-verified" });
+    return getMeta("cutoverAt").then(function (m) {
+      if (m) return { skipped: "already", at: m.value };
+
+      var stores = ["messages", "memories", "lifeEvents", "openLoops"];
+      return Promise.all(stores.map(function (s) {
+        return count(s).then(function (n) { return n; });
+      })).then(function (before) {
+        var rec = {
+          at: Date.now(),
+          policy: "keep-30d",
+          deleteAfter: Date.now() + RETENTION_DAYS * 86400000,
+          idbCounts: { messages: before[0], memories: before[1], lifeEvents: before[2], openLoops: before[3] }
+        };
+        return setMeta("cutoverAt", rec).then(function () { return rec; });
+      });
+    }).catch(function (e) {
+      state.lastError = "cutover:" + (e && e.message || e);
+      return { skipped: "error", error: state.lastError };
+    });
+  }
+
+  /* 到期清理：只有「到了 30 天」且「条数再校验一次仍然一致」才删 */
+  function sweep() {
+    return getMeta("cutoverAt").then(function (m) {
+      var rec = m && m.value;
+      if (!rec || !rec.deleteAfter) return { skipped: "no-cutover" };
+      if (Date.now() < rec.deleteAfter) {
+        return { skipped: "not-due", deleteAfter: rec.deleteAfter };
+      }
+      return migrate().then(function (rep) {
+        if (!rep.ok) return { skipped: "recheck-failed" };
+        var removed = 0;
+        try {
+          var drop = [];
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (!k) continue;
+            if (k === "aura_life_events_v1" || k === "aura_openloops_v1" ||
+                k === "aura_memfacts_v1" || k.indexOf("aura_msgs_") === 0) drop.push(k);
+          }
+          drop.forEach(function (k) { localStorage.removeItem(k); removed++; });
+        } catch (e) { /* 删失败就不删 */ }
+        return setMeta("sweptAt", { at: Date.now(), removed: removed }).then(function () {
+          return { removed: removed };
+        });
+      });
+    }).catch(function (e) { return { skipped: "error", error: String(e && e.message || e) }; });
+  }
+
   /* ---------------- hydrate：localStorage 被清时从 IDB 还原 ---------------- */
   function hydrate() {
     return Promise.all([
@@ -282,8 +378,44 @@
     }, 400);
   }
 
-  function clearStore(name) {
-    return tx([name], "readwrite").then(function (t) {
+  /* ---------------- 软删除专用：靠 deletedAt 索引，不扫全表 ----------------
+     注意：deletedAt 为 null 的记录**不会**进索引（IndexedDB 的 null 不是合法 key），
+     这正好合我们的用法 ——「活着的」用 sessionId 索引取，
+     「已删除且到期」用 deletedAt 索引的范围查（快得多）。 */
+  function deadBefore(store, cutoff) {
+    return tx([store]).then(function (t) {
+      return new Promise(function (res) {
+        try {
+          var idx = t.objectStore(store).index("deletedAt");
+          var req = idx.count(IDBKeyRange.upperBound(cutoff));
+          req.onsuccess = function () { res(req.result || 0); };
+          req.onerror = function () { res(-1); };
+        } catch (e) { res(-1); }
+      });
+    }).catch(function () { return -1; });
+  }
+
+  function purgeDead(store, cutoff) {
+    return tx([store], "readwrite").then(function (t) {
+      return new Promise(function (res) {
+        var n = 0;
+        try {
+          var idx = t.objectStore(store).index("deletedAt");
+          var cur = idx.openCursor(IDBKeyRange.upperBound(cutoff));
+          cur.onsuccess = function (e) {
+            var c = e.target.result;
+            if (!c) { res(n); return; }
+            c.delete();
+            n += 1;
+            c.continue();
+          };
+          cur.onerror = function () { res(n); };
+        } catch (e) { res(n); }
+      });
+    }).catch(function () { return 0; });
+  }
+
+  function clearStore(name) {    return tx([name], "readwrite").then(function (t) {
       return new Promise(function (res) {
         var r = t.objectStore(name).clear();
         r.onsuccess = function () { res(true); };
@@ -295,6 +427,7 @@
   return {
     DB_NAME: DB_NAME,
     SUPPORTED_SCHEMA: SUPPORTED_SCHEMA,
+    RETENTION_DAYS: RETENTION_DAYS,
     STORES: STORES,
     open: open,
     get: getAll,
@@ -304,10 +437,14 @@
     getMeta: getMeta,
     setMeta: setMeta,
     migrate: migrate,
+    cutover: cutover,
+    sweep: sweep,
     gate: gate,
     hydrate: hydrate,
     mirror: mirror,
     clearStore: clearStore,
+    deadBefore: deadBefore,
+    purgeDead: purgeDead,
     state: function () { return state; },
     report: function () { return report; }
   };

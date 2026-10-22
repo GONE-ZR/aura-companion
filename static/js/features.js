@@ -18,15 +18,30 @@
   /* ============================================================
      一、多会话
      ============================================================ */
-  function sessions() {
+  function rawSessions() {
     var list = S.get(K_SESSIONS, null);
     if (!Array.isArray(list) || !list.length) {
-      list = [{ id: cfg.sessionId, title: "第一次说话", created: Date.now(), updated: Date.now() }];
+      list = [{ id: cfg.sessionId, title: "第一次说话", created: Date.now(), updated: Date.now(), deletedAt: null }];
       S.set(K_SESSIONS, list);
     }
     return list;
   }
-  function saveSessions(list) { S.set(K_SESSIONS, list); }
+  /* §1.2 统一出口：界面拿到的永远是"没被删的"，已删除的只在回收站里 */
+  function sessions() {
+    if (window.AuraRecords) return window.AuraRecords.sessions({});
+    return rawSessions().filter(function (s) { return s && !s.deletedAt; });
+  }
+  function saveSessions(list) {
+    /* 保存时保留墓碑（否则一次保存就把已删除的会话彻底抹掉） */
+    if (window.AuraRecords) {
+      var seen = {};
+      (list || []).forEach(function (s) { if (s && s.id) seen[s.id] = true; });
+      var tombstones = rawSessions().filter(function (s) { return s && s.deletedAt && !seen[s.id]; });
+      S.set(K_SESSIONS, (list || []).concat(tombstones));
+      return;
+    }
+    S.set(K_SESSIONS, list);
+  }
 
   /* 把 localStorage 里存在、但没登记过的历史会话补进列表（不丢老对话） */
   function registerOrphanSessions() {
@@ -63,7 +78,9 @@
     for (var i = 0; i < list.length; i++) {
       if (list[i].id === cfg.sessionId) return list[i];
     }
-    return list[0];
+    /* 会话被删光 / 刚删完当前会话时 list 可能是空的 ——
+       这里必须给一个安全的兜底，否则 syncTitle() 会抛 TypeError 把界面打断 */
+    return list[0] || { id: cfg.sessionId, title: "新的对话", created: Date.now(), updated: Date.now() };
   }
 
   function touchSession() {
@@ -97,6 +114,31 @@
   }
 
   function deleteSession(id) {
+    /* §1 数据层：软删除（会话 + 其下消息一起打删除标记），30 天内可恢复。
+       这里不再物理删数据 —— 物理删除只在 30 天到期清理时发生。 */
+    if (window.AuraRecords) {
+      var info = window.AuraRecords.softDeleteSession(id);
+      var rest = window.AuraRecords.sessions({});
+      if (cfg.sessionId === id) {
+        if (rest.length) A.chat.loadSession(rest[0].id);
+        else newSession();                  /* 空状态：她在，先说一句 */
+      }
+      renderSessions();
+      /* 5 秒撤销条（recycle.js 已实现，这里接上） */
+      if (window.AuraRecycle && info) {
+        window.AuraRecycle.removeWithUndo({
+          kind: "session",
+          label: (info.session && info.session.title) || "未命名",
+          restore: function () {
+            window.AuraRecords.restoreSession(id);
+            renderSessions();
+            A.chat.loadSession(id);
+          }
+        }, { count: info.messages });
+      }
+      return;
+    }
+
     var list = sessions().filter(function (s) { return s.id !== id; });
     if (!list.length) {
       list = [{ id: "s" + Date.now().toString(36), title: "新的对话", created: Date.now(), updated: Date.now() }];
@@ -124,7 +166,7 @@
     if (!q) return [];
     var out = [];
     sessions().forEach(function (s) {
-      var msgs = S.get("aura_msgs_" + s.id, []) || [];
+      var msgs = window.AuraRecords ? window.AuraRecords.messages(s.id) : (S.get("aura_msgs_" + s.id, []) || []);
       msgs.forEach(function (m, idx) {
         if (m.content && m.content.toLowerCase().indexOf(q) !== -1) {
           out.push({ session: s, index: idx, text: m.content, role: m.role });
@@ -140,7 +182,7 @@
   function exportMarkdown() {
     var msgs = A.messages.load();
     var lines = ["# 对话记录", "", "- 会话：" + (currentSession().title || ""),
-                 "- 导出时间：" + new Date().toLocaleString("zh-CN"), "", "---", ""];
+                 "- 导出时间：" + (window.AuraTime ? window.AuraTime.full(Date.now()) : ""), "", "---", ""];
     msgs.forEach(function (m) {
       lines.push((m.role === "me" ? "我：" : "陪伴：") + " " + (m.content || ""));
       lines.push("");
@@ -149,11 +191,20 @@
   }
 
   function exportJson() {
+    /* §1.1：导出时间一律 ISO 8601（含毫秒与时区），不导毫秒数也不导本地化字符串 */
+    var iso = function (v) { return window.AuraTime ? window.AuraTime.iso(v) : new Date(v).toISOString(); };
+    var msgs = A.messages.load().map(function (m) {
+      return {
+        id: m.id, role: m.role, content: m.content,
+        createdAt: iso(m.ts), bubbleCount: m.bubbleCount || 1
+      };
+    });
     var data = {
       app: "quiet-companion",
-      exported_at: new Date().toISOString(),
+      schemaVersion: 1,
+      exported_at: iso(Date.now()),
       session: currentSession(),
-      messages: A.messages.load()
+      messages: msgs
     };
     download("quiet-companion-" + today() + ".json", JSON.stringify(data, null, 2), "application/json");
   }
@@ -319,7 +370,7 @@
         renderSessions();
       });
       row.appendChild(t);
-      var n = el("span", "ft-session-n", String((S.get("aura_msgs_" + s.id, []) || []).length));
+      var n = el("span", "ft-session-n", String((window.AuraRecords ? window.AuraRecords.messages(s.id) : (S.get("aura_msgs_" + s.id, []) || [])).length));
       row.appendChild(n);
       var del = el("button", "ft-session-del", "×");
       del.title = "删除这个会话";
@@ -400,6 +451,23 @@
           }
         }],
         ["删掉这一句", function () {
+          /* §1 数据层：软删除 + 5 秒撤销（位置与顺序靠 deletedAt 恢复，不靠重排） */
+          var sid = A.cfg.sessionId;
+          if (window.AuraRecords) {
+            var hit = window.AuraRecords.softDeleteMessage(sid, msg.id);
+            if (hit && window.AuraRecycle) {
+              window.AuraRecycle.removeWithUndo({
+                kind: "message",
+                label: "1 条消息",
+                restore: function () {
+                  window.AuraRecords.restoreMessage(sid, msg.id);
+                  A.chat.reload();
+                }
+              }, { count: 1 });
+            }
+            A.chat.reload();
+            return;
+          }
           var msgs = A.messages.load();
           var idx = msgs.indexOf(msg);
           if (idx >= 0) {
@@ -575,7 +643,9 @@
   }
   function syncTitle() {
     var t = document.getElementById("ft-session-title");
-    if (t) t.textContent = currentSession().title || "新的对话";
+    if (!t) return;
+    var s = currentSession();
+    t.textContent = (s && s.title) || "新的对话";
   }
 
   /* ============================================================

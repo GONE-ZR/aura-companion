@@ -388,7 +388,7 @@
   /* ---------- 壁纸 ---------- */
   function applyWallpaper() {
     var wp = document.getElementById("wp-layer");
-    var mask = document.getElementById("mask-layer");
+    var mask = document.getElementById("veil-layer");
     if (!wp || !mask) return;
     if (cfg.wallpaper) {
       wp.style.backgroundImage = "url(\"" + cfg.wallpaper + "\")";
@@ -482,10 +482,19 @@
   /* ---------- 对话存取 ---------- */
   function msgKey(sessionId) { return MESSAGES_PREFIX + (sessionId || cfg.sessionId); }
   function loadMessages() {
+    /* §1.2 统一出口：软删除的消息不返回给界面 */
+    var arr = getJSON(msgKey(), []);
+    if (!Array.isArray(arr)) return [];
+    if (window.AuraRecords) return window.AuraRecords.messages(cfg.sessionId);
+    return arr.filter(function (m) { return m && !m.deletedAt; });
+  }
+  function loadRawMessages() {
     var arr = getJSON(msgKey(), []);
     return Array.isArray(arr) ? arr : [];
   }
   function saveMessages(arr) {
+    /* §1.2：保存时保留墓碑，不许顺手抹掉软删除的消息 */
+    if (window.AuraRecords) return window.AuraRecords.saveMessages(cfg.sessionId, arr);
     return setJSON(msgKey(), arr);
   }
   function clearMessages() {

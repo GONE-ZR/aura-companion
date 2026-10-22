@@ -392,7 +392,7 @@
     var inp = document.createElement("input");
     inp.type = "password";
     inp.className = "txt";
-    inp.placeholder = "sk-...";
+    inp.placeholder = "粘贴你的密钥";
     inp.value = cfg.apiKey || "";
     inp.style.cssText = "width:100%";
     wrap.appendChild(label);
@@ -606,6 +606,23 @@
         window.Aura.save.apiKey("");
         keyInput.value = "";
         toast("密钥已清除");
+      });
+    }
+    var proxyInput = $("in-proxy");
+    if (proxyInput) {
+      proxyInput.value = S.getStr("aura_chat_proxy", "");
+      var ps = $("btn-proxy-save");
+      if (ps) ps.addEventListener("click", function () {
+        var v = (proxyInput.value || "").trim().replace(/\/+$/, "");
+        S.setStr("aura_chat_proxy", v);
+        proxyInput.value = v;
+        toast(v ? "代理已保存，之后走代理" : "代理已清空");
+      });
+      var pc = $("btn-proxy-clear");
+      if (pc) pc.addEventListener("click", function () {
+        S.setStr("aura_chat_proxy", "");
+        proxyInput.value = "";
+        toast("代理已清空");
       });
     }
     var th = $("in-think");
@@ -989,7 +1006,25 @@
               if (restored && Object.keys(restored).length) {
                 console.log("[idb] 已从 IndexedDB 还原", restored);
               }
-              return window.AuraDB.migrate();
+              /* §1.3：条数校验通过才做切换（删旧 key → 立刻从 IDB 还原 → 复核） */
+              return window.AuraDB.migrate().then(function (rep) {
+                if (rep && rep.ok && window.AuraDB.cutover) {
+                  return window.AuraDB.cutover().then(function (cut) {
+                    window.__auraDbCutover = cut;
+                    if (cut && cut.deleteAfter) {
+                      console.log("[idb] 校验通过，旧数据保留 30 天做备份，到期再清（" + new Date(cut.deleteAfter).toLocaleDateString() + "）");
+                    }
+                    /* 到期才清（每次启动检查一次，没到期什么都不做） */
+                    if (window.AuraDB.sweep) {
+                      window.AuraDB.sweep().then(function (sw) {
+                        if (sw && sw.removed) console.log("[idb] 备份到期，清理旧 key " + sw.removed + " 个");
+                      }).catch(function () { });
+                    }
+                    return rep;
+                  });
+                }
+                return rep;
+              });
             });
           })
           .then(function (rep) {
@@ -1051,6 +1086,149 @@
         });
       }
     } catch (e) { /* ignore */ }
+
+
+    /* ---------------- 15.16 无 Key 引导（本轮 §1.2） ----------------
+       目标：没有 Key 时**一条请求都不发**，只把人引到该去的地方；
+       绝不显示"网络异常 / 请稍后重试"这种误导文案。 */
+    (function () {
+      var gate = $("keygate");
+      var scrim = $("keygate-scrim");
+      var input = $("keygate-input");
+      var err = $("keygate-err");
+      if (!gate) return;
+
+      function hasChannelLocal() {
+        var key = S.getStr("aura_api_key", "");
+        var proxy = S.getStr("aura_chat_proxy", "");
+        return !!(key || proxy);
+      }
+
+      function updateStateLine() {
+        var el = $("key-state");
+        if (!el) return;
+        var key = S.getStr("aura_api_key", "");
+        var proxy = S.getStr("aura_chat_proxy", "");
+        if (proxy) {
+          el.textContent = "状态：代理（暂未启用，地址已保存）";
+        } else if (key) {
+          var tail = key.length > 4 ? key.slice(-4) : "****";
+          el.textContent = "状态：直连（已配置 · 末四位 " + tail + "）";
+        } else {
+          el.textContent = "状态：未配置";
+        }
+      }
+
+      function show() {
+        if (hasChannelLocal()) return;
+        scrim.hidden = false;
+        gate.hidden = false;
+        if (err) err.hidden = true;
+        setTimeout(function () { try { input.focus(); } catch (e) { } }, 120);
+      }
+      function hide() {
+        scrim.hidden = true;
+        gate.hidden = true;
+      }
+
+      var saveBtn = $("keygate-save");
+      if (saveBtn) saveBtn.addEventListener("click", function () {
+        var v = (input.value || "").trim();
+        if (v.length < 12) {
+          if (err) { err.textContent = "这个看起来不像密钥（太短了）。粘贴完整的那一长串。"; err.hidden = false; }
+          return;
+        }
+        window.Aura.save.apiKey(v);
+        input.value = "";
+        updateStateLine();
+        hide();
+        toast("密钥已保存在这台设备上");
+        /* 填完立刻能说话：让她先开口一句，不用人再等 */
+        try {
+          if (window.Aura.chat && window.Aura.chat.greet) window.Aura.chat.greet();
+        } catch (e) { }
+      });
+      var later = $("keygate-later");
+      if (later) later.addEventListener("click", hide);
+      if (scrim) scrim.addEventListener("click", hide);
+
+      window.Aura.showKeyGate = show;
+      window.Aura.updateKeyState = updateStateLine;
+      updateStateLine();
+
+      /* 首次进入：没配置就直接弹（一次），别让人对着输入框发呆 */
+      if (!hasChannelLocal()) {
+        setTimeout(show, 700);
+      }
+      /* 设置抽屉打开时刷新状态行 */
+      var setBtn = $("btn-set") || $("btn-settings");
+      if (setBtn) setBtn.addEventListener("click", function () { setTimeout(updateStateLine, 60); });
+    })();
+
+
+    /* ---------------- 15.16b promptVersion 单一来源（自检 M3） ----------------
+       以前 prompt.js 里写死 v1.0.0、cfgstore 的 model.promptVersion 也写 v1.0.0，
+       两处各改一次就可能不一致。现在启动时以 prompt.js 为准同步过去。 */
+    try {
+      if (window.AuraPrompt && window.AuraPrompt.PROMPT_VERSION && window.AuraCfg) {
+        var pv = window.AuraPrompt.PROMPT_VERSION;
+        var act0 = window.AuraCfg.loadActive();
+        if (act0 && act0.config && act0.config.model && act0.config.model.promptVersion !== pv) {
+          act0.config.model.promptVersion = pv;    /* 内存里先对齐，展示/上报都用它 */
+          window.__promptVersion = pv;
+        } else {
+          window.__promptVersion = pv;
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    /* ---------------- 15.17 软删除到期清理（§1.3，异步、失败不阻塞） ---------------- */
+    try {
+      if (window.AuraRecords) {
+        setTimeout(function () {
+          try {
+            var t0 = performance.now();
+            var n = window.AuraRecords.purge({});
+            var ms = Math.round(performance.now() - t0);
+            window.__purgeReport = { sessions: n.sessions, messages: n.messages, ms: ms };
+            if (n.sessions || n.messages) {
+              console.log("[records] 到期清理：会话 " + n.sessions + " 个 / 消息 " + n.messages + " 条（" + ms + "ms）");
+            }
+          } catch (e) { console.warn("[records] 清理失败（不影响使用）", e); }
+        }, 1200);
+      }
+    } catch (e) { /* ignore */ }
+
+
+    /* ---------------- 15.18 第二部分：宽屏双栏 / 快捷键 / 通知守卫 ---------------- */
+    try {
+      if (window.AuraWide) window.AuraWide.init();
+      if (window.AuraKeys) window.AuraKeys.init();
+      if (window.AuraNotify) window.AuraNotify.init();
+
+      /* 设置页：快捷键一览（App 与网页端一致；桌面端多一条托盘说明） */
+      var kl = $("keys-list");
+      if (kl && window.AuraKeys) {
+        kl.textContent = "";
+        window.AuraKeys.list().forEach(function (it) {
+          var row = document.createElement("div");
+          row.className = "keys-row";
+          var k = document.createElement("kbd");
+          k.textContent = it[0];
+          var d = document.createElement("span");
+          d.textContent = it[1];
+          row.appendChild(k);
+          row.appendChild(d);
+          kl.appendChild(row);
+        });
+      }
+      var dh = $("keys-desktop-hint");
+      var isDesktop = /Electron/i.test(navigator.userAgent || "");
+      if (dh) {
+        dh.hidden = !isDesktop;
+        if (isDesktop) dh.textContent = "桌面版另有：关闭窗口收进托盘、Ctrl+Shift+A 全局唤起（可在配置文件里关掉）。";
+      }
+    } catch (e) { console.warn("[wide/keys] 初始化失败：", e); }
 
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {

@@ -48,47 +48,49 @@
   }
 
   function askModel(messages, maxTokens, systemText) {
-    /* 直连模式：手机自己打 DeepSeek（没有服务器也能做摘要） */
-    if (window.Aura.cfg.mode === "direct" && window.Aura.cfg.apiKey) {
-      var msgs = [];
-      if (systemText) msgs.push({ role: "system", content: systemText });
-      messages.forEach(function (m) { msgs.push({ role: m.role, content: m.content }); });
-      return fetch("https://api.deepseek.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + window.Aura.cfg.apiKey
-        },
-        body: JSON.stringify({
-          model: "deepseek-flash",
-          messages: msgs,
-          max_tokens: maxTokens,
-          temperature: 0.2,
-          stream: false
+    var cfg = window.Aura.cfg || {};
+    /* 代理优先（包里零密钥）→ 自填 Key 直连 → 明确选了服务器才走本机 → 否则放弃（不偷偷连电脑） */
+    var proxy = "";
+    try {
+      proxy = window.Aura.store.getStr("aura_chat_proxy", "");
+      if (!proxy && window.AuraCfg) {
+        var a = window.AuraCfg.loadActive();
+        proxy = (a && a.config && a.config.net && a.config.net.chatProxy) || "";
+      }
+    } catch (e) { proxy = ""; }
+    proxy = proxy ? String(proxy).trim().replace(/\/+$/, "") : "";
+
+    var msgs = [];
+    if (systemText) msgs.push({ role: "system", content: systemText });
+    messages.forEach(function (m) { msgs.push({ role: m.role, content: m.content }); });
+
+    var payload = {
+      model: "deepseek-flash",
+      thinking: { type: "disabled" },
+      messages: msgs,
+      max_tokens: maxTokens,
+      temperature: 0,
+      stream: false,
+      response_format: { type: "json_object" }
+    };
+
+    if (proxy || cfg.apiKey) {
+      var url = proxy ? (proxy + "/chat") : "https://api.deepseek.com/v1/chat/completions";
+      var headers = { "Content-Type": "application/json" };
+      if (!proxy) headers["Authorization"] = "Bearer " + cfg.apiKey;
+      return fetch(url, { method: "POST", headers: headers, body: JSON.stringify(payload) })
+        .then(function (r) {
+          if (!r.ok) throw new Error("http " + r.status);
+          return r.json();
         })
-      }).then(function (r) {
-        if (!r.ok) throw new Error("http " + r.status);
-        return r.json();
-      }).then(function (d) {
-        try { return (d.choices[0].message.content) || ""; } catch (e) { return ""; }
-      });
+        .then(function (d) {
+          try { return (d.choices[0].message.content) || ""; } catch (e) { return ""; }
+        });
     }
 
-    return fetch("/api/chat", {
-      method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, apiKeyHeader()),
-      body: JSON.stringify({
-        messages: messages,
-        system_prompt: systemText,
-        max_tokens: maxTokens,
-        temperature: 0.2
-      })
-    }).then(function (r) {
-      if (!r.ok) throw new Error("http " + r.status);
-      return r.json();
-    }).then(function (d) {
-      return (d && d.reply) || "";
-    });
+    /* §1.4：无 Key 且无代理 → 本次摘要直接跳过（静默丢弃，不报错、不阻塞对话）。
+       绝不回落到同源 /api/chat —— APK 里那台服务器不存在。 */
+    return Promise.reject(new Error("NO_CHANNEL"));
   }
 
   /* ---------------- 触发摘要（7.4） ---------------- */
