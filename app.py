@@ -342,7 +342,7 @@ DOWNLOAD_DIR = BASE_DIR / "downloads"
 
 def _apk_path():
     """优先用发布签名版；没有就退回 debug 版"""
-    for name in ("aura-companion-1.0.0.apk", "aura-companion.apk"):
+    for name in ("aura-companion.apk", "aura-companion-1.0.0.apk"):
         p = DOWNLOAD_DIR / name
         if p.exists():
             return p
@@ -357,6 +357,7 @@ def download_page():
     if p is None:
         return Response("还没有可下载的 APK", mimetype="text/plain; charset=utf-8")
     size_mb = round(p.stat().st_size / 1048576, 2)
+    apk_url = "/download/" + p.name
     html = """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>下载 · 安静陪伴</title>
@@ -374,13 +375,13 @@ def download_page():
 </style></head><body>
 <h1>安静陪伴</h1>
 <p>下载到手机后直接安装</p>
-<a class="btn" href="/download/aura-companion-1.0.0.apk">下载 APK（__SIZE__ MB）</a>
+<a class="btn" href="__APK__">下载 APK（__SIZE__ MB）</a>
 <img class="qr" src="/download/qr.png" alt="二维码">
 <p class="meta">__SIZE__ MB · 安装包 · 装完填一次 DeepSeek 密钥就能用</p>
 <p class="hint">安装时如果提示「禁止安装未知来源应用」，按提示到设置里允许「浏览器 / 文件管理」安装即可。<br>
 装完第一次打开会让你填 DeepSeek 密钥（sk- 开头），只存在这台手机里。</p>
 </body></html>"""
-    html = html.replace("__SIZE__", str(size_mb))
+    html = html.replace("__SIZE__", str(size_mb)).replace("__APK__", apk_url)
     return Response(html, mimetype="text/html; charset=utf-8")
 
 

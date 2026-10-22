@@ -296,6 +296,40 @@
     return Math.max(0, Math.round(base + jitter));
   }
 
+  /* ---------------- 没密钥时的引导 ---------------- */
+  function noKeyHint() {
+    if (window.Aura.ui && window.Aura.ui.toast) {
+      window.Aura.ui.toast("还没填 DeepSeek 密钥，先填一下");
+    }
+    /* 在聊天区里明说一遍（这条不存历史，下次发送就清掉） */
+    if (log) {
+      var old = log.querySelector(".nokey-note");
+      if (old && old.parentNode) old.parentNode.removeChild(old);
+      var box = document.createElement("div");
+      box.className = "msg ai nokey-note";
+      var inner = document.createElement("div");
+      inner.className = "bubble";
+      var txt = document.createElement("div");
+      txt.className = "bubble-text";
+      txt.textContent = "还没填密钥，所以我发不出去。点右上角设置 → 连接 → 填「DeepSeek 密钥」，填完就能聊了。";
+      inner.appendChild(txt);
+      box.appendChild(inner);
+      log.appendChild(box);
+      scrollToEnd(true);
+    }
+    /* 直接把设置打开，并高亮密钥那一栏 */
+    setTimeout(function () {
+      if (window.Aura.ui && window.Aura.ui.openDrawer) window.Aura.ui.openDrawer();
+      var k = document.getElementById("in-key");
+      if (k) {
+        try {
+          k.scrollIntoView({ block: "center", behavior: "smooth" });
+          k.focus();
+        } catch (e) { /* ignore */ }
+      }
+    }, 260);
+  }
+
   /* ---------------- 发送 ---------------- */
   function setBusy(v) {
     busy = v;
@@ -308,6 +342,13 @@
     var text = input.value.trim();
     var hasImg = !!pendingImg;
     if (!text && !hasImg) return;
+
+    /* 没有密钥又选了"手机直连"：APK 里没有服务器，硬发必然失败 ——
+       不如直接把原因说清楚，并把设置里的密钥那一栏推到眼前。 */
+    if (cfg.mode !== "server" && !cfg.apiKey) {
+      noKeyHint();
+      return;
+    }
 
     /* 发送锁：防连点（第 19.3） */
     setBusy(true);

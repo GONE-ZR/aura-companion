@@ -181,6 +181,15 @@
   function registerSW() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol === "file:") return;
+    /* APK（Capacitor）里没有 Service Worker，也不该用网页那套更新提示 ——
+       不然会出现"有新版本了"点了没反应。APK 的更新走 updater.js。 */
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      return;
+    }
+    if (location.protocol === "https:" && location.hostname === "localhost") {
+      /* Capacitor 的 origin 就是 https://localhost —— 一并挡掉 */
+      return;
+    }
 
     var hadController = !!navigator.serviceWorker.controller;
 
@@ -665,7 +674,23 @@
     });
     var cu = $("btn-check-update");
     if (cu) cu.addEventListener("click", function () {
-      if (!REG) { toast("这个环境不支持自动更新"); return; }
+      if (!REG) {
+        /* APK / 无 Service Worker：改去查安装包有没有新版 */
+        if (window.Aura.updater && window.Aura.updater.check) {
+          toast("正在检查新版…");
+          window.Aura.updater.check().then(function (m) {
+            if (m) {
+              window.Aura.updater.showBar(m);
+              toast("有新版 v" + m.version + "，点上面的按钮下载");
+            } else {
+              toast("已经是最新版（v" + (window.Aura.updater.CURRENT || "") + "）");
+            }
+          }).catch(function () { toast("检查失败，稍后再试"); });
+        } else {
+          toast("这个环境不支持自动更新");
+        }
+        return;
+      }
       REG.update().then(function () {
         if (REG.waiting) { setUpdateBar(true); toast("有新版本了"); }
         else toast("已经是最新了");
@@ -687,6 +712,9 @@
     if (window.Aura.remote && window.Aura.remote.init) {
       try { window.Aura.remote.init(); } catch (e) { /* ignore */ }
     }
+
+    /* 15.8 密钥相关：没密钥就常驻提示 + 设置里加个"测一下" */
+    initKeyTools();
 
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
@@ -777,6 +805,81 @@
     { alias: "AliasRose", hex: "#C0A0A0", name: "藕粉" },
     { alias: "AliasViolet", hex: "#9A9AB0", name: "灰紫" }
   ];
+
+  /* ---------------- 密钥相关的小工具 ---------------- */
+  /* ① 没密钥时常驻一条提示（点了直接跳设置那一栏）
+     ② 设置里给密钥加一个「测一下」按钮（真的去打一次 /v1/models）*/
+  function initKeyTools() {
+    var KEY_BAR_ID = "key-bar";
+
+    function needKey() {
+      return cfg.mode !== "server" && !cfg.apiKey;
+    }
+
+    function syncKeyBar() {
+      var bar = document.getElementById(KEY_BAR_ID);
+      if (!needKey()) {
+        if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+        return;
+      }
+      if (bar) return;
+      bar = document.createElement("div");
+      bar.id = KEY_BAR_ID;
+      bar.style.cssText = [
+        "position:fixed", "left:0", "right:0", "top:0", "z-index:9000",
+        "background:#c96442", "color:#fff", "font-size:13px", "line-height:1.4",
+        "padding:9px 14px", "text-align:center", "cursor:pointer",
+        "font-family:inherit"
+      ].join(";");
+      bar.textContent = "还没填 DeepSeek 密钥 · 点这里去填";
+      bar.addEventListener("click", function () {
+        if (window.Aura.ui && window.Aura.ui.openDrawer) window.Aura.ui.openDrawer();
+        setTimeout(function () {
+          var k = $("in-key");
+          if (k) {
+            try { k.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { }
+            k.focus();
+          }
+        }, 220);
+      });
+      document.body.appendChild(bar);
+    }
+
+    syncKeyBar();
+    setInterval(syncKeyBar, 3000);
+
+    var saveBtn = $("btn-key-save");
+    if (saveBtn && !$("btn-key-test")) {
+      var t = document.createElement("button");
+      t.id = "btn-key-test";
+      t.className = "btn";
+      t.type = "button";
+      t.textContent = "测一下";
+      t.style.marginLeft = "8px";
+      t.addEventListener("click", function () {
+        var key = (cfg.apiKey || "").trim();
+        if (!key) { toast("先填密钥再测"); return; }
+        toast("正在连 DeepSeek…");
+        fetch("https://api.deepseek.com/v1/models", {
+          headers: { "Authorization": "Bearer " + key }
+        }).then(function (r) {
+          if (r.status === 401) throw new Error("密钥不对（401）");
+          if (!r.ok) throw new Error("服务返回 " + r.status);
+          return r.json();
+        }).then(function (d) {
+          var ids = (d && d.data ? d.data : []).map(function (m) { return m.id; }).slice(0, 3);
+          toast("密钥可用（模型：" + (ids.join(" / ") || "已连通") + "）");
+        }).catch(function (e) {
+          var msg = String(e && e.message || e);
+          if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+            msg = "连不上 api.deepseek.com（手机网络/代理问题）";
+          }
+          toast("自检失败：" + msg);
+        });
+      });
+      saveBtn.parentNode.insertBefore(t, saveBtn.nextSibling);
+    }
+  }
 
   function initIconSwitcher() {
     var row = $("icon-row");

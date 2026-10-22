@@ -9,7 +9,7 @@
   if (!A) return;
 
   /* 当前版本 —— 每次发版记得改这里 */
-  var CURRENT = "1.0.2";
+  var CURRENT = "1.0.3";
 
   /* 清单地址：国内直连 raw 是被墙的，所以优先用加速通道。
      gh-proxy.com（实测 1.1 秒）→ GitHub Pages（自己的域名）→ raw（备用） */
@@ -71,19 +71,23 @@
     if (btn) {
       btn.textContent = "下载新版";
       btn.onclick = function () {
-        /* 下载走能通的通道（gh-proxy 优先，APK 里 WebView 用 _system 交给系统浏览器） */
+        /* 下载走能通的通道（gh-proxy 优先）。
+           APK 的 WebView 里 window.open 常常被吞，所以先用它试，
+           打不开就把地址交给系统浏览器（location.href 会被 Capacitor 拦下并外开）。 */
         var name = (m.apk || "aura-companion.apk");
         var url = "https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/" + name;
-        var opened = null;
-        try { opened = window.open(url, "_system"); } catch (e) { opened = null; }
-        if (!opened) {
-          try { opened = window.open(url, "_blank"); } catch (e2) { opened = null; }
+        var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        if (native) {
+          /* Capacitor 会把"跳到外部网址"交给系统浏览器，浏览器负责下载+安装 */
+          try { location.href = url; } catch (e) { }
+          btn.textContent = "已交给浏览器…";
+          setTimeout(function () { btn.textContent = "下载新版"; }, 4000);
+          return;
         }
+        var opened = null;
+        try { opened = window.open(url, "_blank"); } catch (e) { opened = null; }
         if (!opened) {
-          /* 兜底：把地址摆出来，长按复制或用系统浏览器打开 */
-          if (A.ui && A.ui.toast) {
-            A.ui.toast("没打开？复制这个地址到浏览器：" + url);
-          }
+          if (A.ui && A.ui.toast) A.ui.toast("没打开？复制这个地址到浏览器：" + url);
           try { window.prompt("下载地址（复制到浏览器打开）", url); } catch (e3) { }
         }
       };
