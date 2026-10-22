@@ -249,6 +249,12 @@
       <label class="row"><input id="in-quick-replies" type="checkbox" checked>
         <span>她问问题时给三个短选项</span></label>
     </div>
+    <div class="drawer-item" style="--i:4" id="cfg-row">
+      <label class="row"><span>配置</span></label>
+      <p class="hint" id="cfg-line">加载中…</p>
+      <button id="btn-cfg-reset" class="btn">恢复默认配置</button>
+      <p class="hint">长按下面的版本号 5 秒也能恢复（连不上电脑时的最后一道保险）。</p>
+    </div>
     <div class="drawer-item" style="--i:5" id="about-row">
       <label class="row"><span>关于</span></label>
       <p class="hint" id="about-line">版本加载中…</p>
@@ -337,6 +343,8 @@
 <div id="toast" hidden></div>
 
 <script src="/static/js/settings.js"></script>
+<script src="/static/js/cfgstore.js"></script>
+<script>fetch("/static/config.bundled.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j)window.AURA_CFG_BUNDLED=j;}).catch(function(){});</script>
 <script src="/static/js/engine.js"></script>
 <script src="/static/js/prompt.js"></script>
 <script src="/static/js/safety.js"></script>

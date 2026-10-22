@@ -35,7 +35,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, RGBColor, Cm
+from docx.shared import Pt, RGBColor, Cm, Emu
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -210,6 +210,30 @@ def add_table(doc, rows):
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
 
+def add_image(doc, src: Path, alt: str = ""):
+    """插入图片：按宽高比自动缩放（最宽 13cm、最高 19cm），居中。"""
+    if not src.exists():
+        p(doc, "[图片缺失: %s]" % src.name, size=9.5, color=DIM)
+        return
+    try:
+        from PIL import Image
+        w, h = Image.open(src).size
+        scale = min(Cm(13) / w, Cm(19) / h)
+        doc.add_picture(str(src), width=Emu(int(w * scale)))
+    except Exception:
+        doc.add_picture(str(src), width=Cm(12))
+    par = doc.paragraphs[-1]
+    par.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    par.paragraph_format.space_before = Pt(6)
+    par.paragraph_format.space_after = Pt(4)
+    if alt:
+        cap = doc.add_paragraph()
+        cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cap.paragraph_format.space_after = Pt(10)
+        r = cap.add_run(alt)
+        set_font(r, size=9, color=DIM)
+
+
 def add_hr(doc):
     par = doc.add_paragraph()
     par.paragraph_format.space_before = Pt(4)
@@ -279,6 +303,16 @@ def convert(md_path: Path, out_path: Path):
                 i += 1
             i += 1  # 跳过结束围栏
             add_code_block(doc, buf if buf else [""])
+            continue
+
+        # 图片
+        m = re.match(r"^!\[([^\]]*)\]\(([^)]+)\)\s*$", stripped)
+        if m:
+            src = Path(m.group(2))
+            if not src.is_absolute():
+                src = (md_path.parent / src).resolve()
+            add_image(doc, src, m.group(1))
+            i += 1
             continue
 
         # 分隔线

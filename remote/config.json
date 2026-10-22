@@ -11,7 +11,12 @@
     "updateBar": true,
     "voice": true,
     "wallpaper": true,
-    "weather": true
+    "weather": true,
+    "reminders": true,
+    "agentMode": true,
+    "voiceTts": true,
+    "lifeLine": true,
+    "killSwitch": false
   },
   "icon": {
     "appIconUrl": "",
@@ -52,5 +57,36 @@
     "memoryExtract": true,
     "modelTier": "standard",
     "killSwitch": false
+  },
+  "schemaVersion": 1,
+  "configVersion": 23,
+  "appearance": {
+    "background": "warm",
+    "expression": "expr.soft",
+    "iconPack": "pack.default"
+  },
+  "copy": {
+    "inputPlaceholder": "说点什么…",
+    "emptyState": "我在。"
+  },
+  "quickReplies": {
+    "enabled": true,
+    "max": 3,
+    "items": [
+      "我有点累",
+      "睡不着",
+      "今天还行",
+      "想安静待会儿"
+    ]
+  },
+  "model": {
+    "tier": "standard",
+    "temperature": 1.25,
+    "promptVersion": "v1.0.0"
+  },
+  "notify": {
+    "dailyMax": 2,
+    "quietStart": "23:00",
+    "quietEnd": "08:00"
   }
 }

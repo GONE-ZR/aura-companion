@@ -63,6 +63,53 @@
     return next().catch(function (e) { state.lastError = String(e && e.message || e); return null; });
   }
 
+
+  /* ---------------- 第七篇：把三层配置（新 schema）应用到界面 ----------------
+     来源可能是 active / scan / bundled，字段一律带兜底。 */
+  function applyFromStore(c) {
+    if (!c) return;
+    try {
+      /* 文案 */
+      if (c.copy) {
+        if (c.copy.inputPlaceholder) {
+          A.store.setStr("aura_text_placeholder", c.copy.inputPlaceholder);
+          var inp = document.getElementById("input");
+          if (inp) inp.placeholder = c.copy.inputPlaceholder;
+        }
+        if (c.copy.emptyState) {
+          A.store.setStr("aura_text_empty", c.copy.emptyState);
+          var em = document.querySelector(".empty-text");
+          if (em) em.textContent = c.copy.emptyState;
+        }
+      }
+      /* 背景 */
+      if (c.appearance && c.appearance.background) {
+        document.body.setAttribute("data-bg", c.appearance.background);
+      }
+      /* 快捷短语 */
+      if (c.quickReplies && Array.isArray(c.quickReplies.items) && c.quickReplies.items.length) {
+        A.store.set("aura_shortcuts", c.quickReplies.items.slice(0, 6));
+        if (A.features && A.features.renderShortcuts) A.features.renderShortcuts();
+      }
+      /* 功能开关 + killSwitch（安全层永远不在这里） */
+      if (c.features) {
+        var kill = !!c.features.killSwitch;
+        var eff = {};
+        ["weather", "reminders", "search", "agentMode", "voiceTts", "lifeLine"].forEach(function (k) {
+          eff[k] = kill ? false : c.features[k] !== false;
+        });
+        Object.keys(eff).forEach(function (k) {
+          document.body.setAttribute("data-flag-" + k, eff[k] ? "1" : "0");
+        });
+        document.body.setAttribute("data-killswitch", kill ? "1" : "0");
+      }
+      /* 细腻程度（只读，不覆盖用户手选） */
+      if (c.model && c.model.tier) {
+        A.store.setStr("aura_tier_forced", c.model.tier);
+      }
+    } catch (e) { /* 配置应用失败不许影响界面 */ }
+  }
+
   /* ---------------- 应用 ---------------- */
   function applyTheme(t) {
     if (!t) return;
@@ -244,6 +291,17 @@
       state.version = cfg.version;
       state.appliedAt = Date.now();
       A.store.set("aura_remote_cfg_cache", cfg);
+      /* 第七篇 §4：只升不降 + 原子提交（提交失败就用现有的，不半新半旧） */
+      try {
+        if (window.AuraCfg) {
+          var cur = (window.__auraCfgActive && window.__auraCfgActive.config) || { configVersion: 0 };
+          var res = window.AuraCfg.acceptIfValid(cfg, cur);
+          if (res && res.ok) {
+            window.__auraCfgActive = { config: res.config, source: "active" };
+            applyFromStore(res.config);
+          }
+        }
+      } catch (e) { /* 校验层出错就用旧的 */ }
       applyTheme(cfg.theme);
       applyFeatures(cfg.features);
       applyFlags(cfg.flags);

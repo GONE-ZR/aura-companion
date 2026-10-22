@@ -893,6 +893,55 @@
       }
     } catch (e) { /* ignore */ }
 
+
+    /* ---------------- 15.13 第七篇：三层配置（先渲染，不等网络） ---------------- */
+    try {
+      if (window.AuraCfg) {
+        var active = window.AuraCfg.loadActive();
+        window.__auraCfgActive = active;
+        /* 应用外观/文案/开关（三层里拿到什么就用什么，绝不为空） */
+        if (window.Aura.remote && window.Aura.remote.applyFromStore) {
+          window.Aura.remote.applyFromStore(active.config);
+        }
+        /* 设置页三项（132） */
+        var cfgLine = $("cfg-line");
+        if (cfgLine) {
+          cfgLine.textContent = "配置 v" + active.config.configVersion +
+            " · 来源 " + ({ active: "本地", scan: "本地(扫描)", bundled: "内置" }[active.source] || active.source) +
+            " · 资源 " + Object.keys(window.AuraCfg.ASSET_MAP).length + "/" +
+            Object.keys(window.AuraCfg.ASSET_MAP).length;
+        }
+        console.log("[cfg] 版本", active.config.configVersion, "来源", active.source);
+      }
+    } catch (e) { /* 配置层出错也不许白屏 */ }
+
+
+    /* 恢复默认 + 长按版本号 5 秒（§8.1，最后一道逃逸） */
+    try {
+      var rs = $("btn-cfg-reset");
+      if (rs) rs.addEventListener("click", function () {
+        if (!window.confirm("恢复成包里自带的配置？本机缓存的那几代会删掉。")) return;
+        if (window.AuraCfg) {
+          var r = window.AuraCfg.resetToBundled();
+          toast("已恢复默认（v" + r.config.configVersion + "）");
+          setTimeout(function () { location.reload(); }, 600);
+        }
+      });
+      var al = $("about-line");
+      if (al && !al.getAttribute("data-reset-bound")) {
+        al.setAttribute("data-reset-bound", "1");
+        var t0 = 0;
+        al.addEventListener("pointerdown", function () { t0 = Date.now(); });
+        al.addEventListener("pointerup", function () {
+          if (Date.now() - t0 >= 5000 && window.AuraCfg) {
+            window.AuraCfg.resetToBundled();
+            toast("已恢复默认配置");
+            setTimeout(function () { location.reload(); }, 600);
+          }
+        });
+      }
+    } catch (e) { /* ignore */ }
+
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
       setTimeout(function () {
