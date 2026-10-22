@@ -140,23 +140,29 @@
   'use strict';
   var body = document.body;
 
-  /* 配色 */
+  /* 配色：写 html 的 inline style —— 和 settings.js 完全同一套机制，
+     这样情绪色偏移、主题色滑块、预设三者才不打架 */
+  var PAL = { violet:[270,74,62], mint:[166,64,48], amber:[32,90,58] };
+  function setAccent(name){
+    var v = PAL[name];
+    var r = document.documentElement.style;
+    r.setProperty('--acc-h', v[0]);
+    r.setProperty('--acc-s', v[1]);
+    r.setProperty('--acc-l', v[2]);
+  }
+
   document.querySelectorAll('#panel .sw').forEach(function(b){
     b.addEventListener('click', function(){
       body.setAttribute('data-palette', b.dataset.p);
       document.querySelectorAll('#panel .sw').forEach(function(x){
         x.setAttribute('aria-pressed', String(x === b));
       });
-      /* 主色写到 **html** 的 inline style —— 和 settings.js 完全同一套机制，
-         这样情绪色偏移、主题色滑块、预设三者才不打架 */
-      var map = { violet:[270,74,62], mint:[166,64,48], amber:[32,90,58] };
-      var v = map[b.dataset.p];
-      var r = document.documentElement.style;
-      r.setProperty('--acc-h', v[0]);
-      r.setProperty('--acc-s', v[1]);
-      r.setProperty('--acc-l', v[2]);
+      setAccent(b.dataset.p);
     });
   });
+
+  /* 开局就套上预设配色（否则还是 app.css 的默认灰绿） */
+  setAccent('violet');
 
   /* 明暗 */
   function setTheme(t){

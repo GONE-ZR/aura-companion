@@ -31,9 +31,12 @@ body[data-soft="1"]{
   --soft-glass-dim:  rgba(255,255,255,.42);
 
   /* 气泡渐变（我的消息）—— 第二个色相由主色 +42° 推出，
-     所以主色一变（设置面板拖滑块 / 情绪色偏移）整个界面自动跟着变 */
-  --soft-me-a: hsl(var(--acc-h) var(--acc-s) calc(var(--acc-l) - 8%));
-  --soft-me-b: hsl(calc(var(--acc-h) + 42) var(--acc-s) calc(var(--acc-l) + 6%));
+     所以主色一变（设置面板拖滑块 / 情绪色偏移）整个界面自动跟着变
+     ★ 注意：--acc-l 是「无单位数字」（如 60），要转成百分比必须
+       写成 calc(var(--acc-l) * 1% - 8%)；直接 calc(60 - 8%) 是非法运算，
+       会让整条 background 声明被丢弃（渐变消失、背景变回纯色）。 */
+  --soft-me-a: hsl(var(--acc-h) var(--acc-s) calc(var(--acc-l) * 1% - 8%));
+  --soft-me-b: hsl(calc(var(--acc-h) + 42) var(--acc-s) calc(var(--acc-l) * 1% + 6%));
 
   /* 圆角放大：流动风的关键 */
   --r-bubble: 20px;
@@ -65,6 +68,9 @@ body[data-soft="1"][data-palette="amber"]{
 }
 
 /* ── 背景柔光：更大、更艳、带噪点压色带 ───────────────── */
+/* app.css 的 .glow 用 --glow-a/100 驱动透明度，polish.css 又叠了一层 filter；
+   所以这里两样都得压住 —— 透明度走变量，filter 和背景走 #glow-layer 提高优先级 */
+body[data-soft="1"]{ --glow-a:20; --glow-scale:1; }
 body[data-soft="1"] #glow-layer{ opacity:1; }
 body[data-soft="1"] #glow-layer::before{
   background:
@@ -72,9 +78,13 @@ body[data-soft="1"] #glow-layer::before{
     radial-gradient(720px 600px at 98% 6%,   hsl(calc(var(--acc-h) + 55) 90% 78% / .34), transparent 60%),
     radial-gradient(900px 760px at 50% 112%, hsl(var(--acc-h) 88% 82% / .30), transparent 64%);
 }
-body[data-soft="1"] .glow{ filter: blur(90px); opacity:.55; }
-body[data-soft="1"] .glow-a{ background: var(--soft-glow-a); }
-body[data-soft="1"] .glow-b{ background: var(--soft-glow-b); }
+body[data-soft="1"] #glow-layer .glow{ filter: blur(90px); }
+body[data-soft="1"] #glow-layer .glow-a{
+  background: radial-gradient(circle, var(--soft-glow-a) 0%, transparent 68%);
+}
+body[data-soft="1"] #glow-layer .glow-b{
+  background: radial-gradient(circle, var(--soft-glow-b) 0%, transparent 68%);
+}
 
 /* ── 顶栏：玻璃层 ─────────────────────────────────────── */
 body[data-soft="1"] #top{
@@ -185,8 +195,8 @@ body[data-soft="1"][data-theme="dark"]{
 }
 body[data-soft="1"][data-theme="dark"] #log > .msg.me > .bubble{
   background: linear-gradient(135deg,
-              hsl(var(--acc-h) var(--acc-s) calc(var(--acc-l) - 4%)),
-              hsl(calc(var(--acc-h) + 42) var(--acc-s) calc(var(--acc-l) + 2%)));
+              hsl(var(--acc-h) var(--acc-s) calc(var(--acc-l) * 1% - 4%)),
+              hsl(calc(var(--acc-h) + 42) var(--acc-s) calc(var(--acc-l) * 1% + 2%)));
   box-shadow:
     0 16px 32px -16px hsl(var(--acc-h) 80% 22% / .7),
     inset 0 1px 0 rgba(255,255,255,.2);
