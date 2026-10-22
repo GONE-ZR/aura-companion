@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="/static/css/remote.css">
 <link rel="stylesheet" href="/static/css/emotion.css">
 <link rel="stylesheet" href="/static/css/second.css">
+<link rel="stylesheet" href="/static/css/comic.css">
 <!-- 柔和流动主题（新增 · 不加 data-soft="1" 时零影响） -->
 <link rel="stylesheet" href="/static/css/theme-soft.css">
 </head>
@@ -239,6 +240,12 @@
       <p class="hint" id="model-adv-line">当前线路：主线路</p>
       <p class="hint">调试信息，普通使用不需要动这里。</p>
     </div>
+    <div class="drawer-item" style="--i:4" id="comic-row">
+      <label class="row"><span>漫画风</span></label>
+      <label class="row"><input id="in-comic" type="checkbox" checked>
+        <span>墨线 + 网点 + 手绘气泡</span></label>
+      <p class="hint">关掉回到暖纸风（衬线 + 细线）。</p>
+    </div>
     <div class="drawer-item" style="--i:4" id="motion-row">
       <label class="row" for="in-reduce-motion"><span>减弱动效</span></label>
       <label class="row"><input id="in-reduce-motion" type="checkbox">
@@ -343,6 +350,7 @@
 
 <div id="toast" hidden></div>
 
+<script src="/static/js/idb.js"></script>
 <script src="/static/js/settings.js"></script>
 <script src="/static/js/cfgstore.js"></script>
 <script>fetch("/static/config.bundled.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j)window.AURA_CFG_BUNDLED=j;}).catch(function(){});</script>

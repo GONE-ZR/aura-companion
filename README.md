@@ -14,6 +14,44 @@
 
 ---
 
+
+## 技术栈定案（2026-10-23）
+
+**已定案：Web 栈。** 不是第一篇写的 RN + Expo + expo-sqlite。
+
+| 层 | 实际用的 |
+|---|---|
+| 前端 | 原生 JS（`static/js/*.js`，无构建步骤）+ CSS |
+| 安卓壳 | Capacitor（APK 3.5 MB，含原生插件：TTS / SpeechRecognition / IconSwitcher） |
+| 桌面壳 | Electron（exe 77 MB） |
+| 存储 | **IndexedDB**（`idb.js`，7 个 object store）+ localStorage 作热缓存 |
+| 流式 | `fetch` + `ReadableStream`（原生，无需 polyfill） |
+
+### 需按 Web 重建的部分（RN 方案 → Web 实现）
+
+| 第一篇写的 | 本项目实际用 | 说明 |
+|---|---|---|
+| `@shopify/react-native-skia`（描边/网点） | **Canvas 2D / SVG pattern** | 45° 网点用 SVG `<pattern transform="rotate(45)">`；描边用 CSS 多层 border |
+| `react-native-reanimated`（worklet 动画） | **CSS transition / animation** | 表情 600~1200ms、气泡入场 180ms、分镜（V1）用 transform |
+| `expo-notifications` | **Capacitor LocalNotifications**（待 M2 接入） | 提醒/天气推送走它 |
+| `expo-sqlite` | **IndexedDB**（`idb.js`） | 见下节「存储」 |
+| `expo-font` + ttf | **`@font-face` + woff2 子集** | 得意黑子集 **495 KB**（ttf 993 KB，Web 用 woff2 更省） |
+| `react-native-gesture-handler` | **Pointer Events** | 戳她/拖气泡（V2） |
+
+### 不适用项（RN 专属，Web 栈不需要）
+
+| 项 | 为什么不适用 |
+|---|---|
+| `expo-secure-store` | Web 没有等价安全存储；密钥本来就不进客户端（服务端模式）或只在用户自己选直连时存本机 |
+| 横屏锁定 / `expo-screen-orientation` | Web 用 CSS + `manifest.json` 的 orientation；APK 在 Capacitor 配置里锁竖屏 |
+| `react-native-gesture-handler` 的手势仲裁 | 浏览器自己做滚动/缩放仲裁，不需要额外库 |
+| Metro 的 `require` 静态分析 / `assetMap.generated.ts` | Web 直接按 URL 加载；资源键校验改成 `cfgstore.js` 里的 `ASSET_MAP` |
+
+### 规则（从本次起生效）
+
+> **新功能一律按 Web 栈实现，禁止混入 RN API**（不出现 `react-native`、`expo-*`、worklet）。
+> 视觉数值照第三篇，但实现手段用 CSS / Canvas / SVG。
+
 ## ⚠️ 先读这两段（规格书第 26 章，原文）
 
 **说明一：**

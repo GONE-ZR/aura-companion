@@ -59,6 +59,9 @@
     try { return localStorage.getItem(k); } catch (e) { return null; }
   }
   function rawSet(k, v) {
+    /* 写穿透：持久层同步一份到 IndexedDB（异步，不阻塞） */
+    try { if (window.AuraDB) window.AuraDB.mirror(k, String(v)); } catch (e) { }
+
     try { localStorage.setItem(k, v); return true; } catch (e) { return false; }
   }
   function rawDel(k) {

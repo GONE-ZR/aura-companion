@@ -1,0 +1,199 @@
+/* ============================================================
+   comic.css —— 漫画风 V0：静态四件套（第三篇 §2/§3）
+
+   ① 墨线描边：2px 纯黑 #111（内部线 1px）
+   ② 45° 网点：SVG pattern，只有四档 0 / 8% / 15% / 30%，不许连续值
+   ③ 手绘气泡：不规则圆角 + 尾巴朝她 + 2px 描边 + #FDFBF4 填充
+   ④ 得意黑：woff2 子集 495KB，**只有一个字重，禁止加粗**
+
+   硬限制（照第三篇）：
+   · 禁止 skewX · 禁止粗体 · 气泡正文 ≥16pt / 行高 1.65
+   · 界面小字用系统字体（与角色风格隔离）
+   · 禁止渐变背景 / 玻璃拟态 / 大圆角 >20px / 阴影
+   ============================================================ */
+
+@font-face {
+  font-family: "Smiley Sans";
+  src: url("/static/fonts/smiley-sans.woff2") format("woff2");
+  font-weight: 400;          /* 只有一个字重 */
+  font-style: oblique 0deg;  /* 字体本身已斜，禁止再 skew */
+  font-display: swap;
+}
+
+/* ---------------- 底色与四态（平涂，无渐变） ---------------- */
+body.comic {
+  --ink: #111111;
+  --paper: #FDFBF4;
+  --text: #2A2A2A;
+  --muted: #6B6B6B;
+  --accent-red: #D9534F;
+  --bg-warm: #FDF6E8;
+  --bg-dusk: #FBE8D3;
+  --bg-cool: #E9EEF2;
+  --bg-gray: #E4E6E8;
+
+  background: var(--bg-warm);
+  color: var(--text);
+  font-family: "Smiley Sans", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+body.comic[data-bg="warm"] { background: var(--bg-warm); }
+body.comic[data-bg="dusk"] { background: var(--bg-dusk); }
+body.comic[data-bg="cool"] { background: var(--bg-cool); }
+body.comic[data-bg="gray"] { background: var(--bg-gray); }
+
+/* ---------------- ② 45° 网点：四档 ---------------- */
+body.comic::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+  transition: opacity 500ms ease;
+  /* 45° + 1.5px 点；颜色 = 主色加深 20%（这里用半透明墨） */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cg transform='rotate(45 6 6)'%3E%3Ccircle cx='6' cy='6' r='1.5' fill='%23111' fill-opacity='0.22'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 12px 12px;   /* 15% */
+}
+body.comic[data-dots="0"]::before { opacity: 0; }
+body.comic[data-dots="8"]::before { background-size: 20px 20px; opacity: .85; }
+body.comic[data-dots="15"]::before { background-size: 12px 12px; opacity: 1; }
+body.comic[data-dots="30"]::before { background-size: 7px 7px; opacity: 1; }
+
+/* 夜晚：转深色平涂，网点改浅、密度降一档（不依赖深色开关） */
+body.comic[data-night="1"] {
+  background: #2A2E33;
+  color: #E8E6E1;
+  --text: #E8E6E1;
+  --muted: #A9A6A0;
+  --paper: #34383E;
+}
+body.comic[data-night="1"]::before { filter: invert(1); opacity: .5; }
+
+/* ---------------- ③ 手绘气泡 ---------------- */
+body.comic #log > .msg .bubble {
+  /* 用 !important 压过 theme-soft / polish 的气泡样式（主题层之间的互斥） */
+  background: var(--paper) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: none !important;         /* 漫画不用阴影 */
+  border-radius: 16px 7px 14px 9px / 9px 14px 7px 16px !important;   /* 不规则 */
+  position: relative;
+  padding: 12px 15px;
+  backdrop-filter: none !important;    /* 不要玻璃拟态 */
+}
+/* 每句圆角轻微抖动（用 nth-child 伪随机，避免每帧变） */
+body.comic #log > .msg:nth-child(3n) .bubble { border-radius: 9px 16px 8px 14px / 14px 8px 16px 9px !important; }
+body.comic #log > .msg:nth-child(3n+1) .bubble { border-radius: 14px 9px 16px 8px / 8px 16px 9px 14px !important; }
+
+/* 尾巴朝她（AI 气泡左下；自己的气泡右下） */
+body.comic #log > .msg.ai .bubble::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  bottom: -9px;
+  width: 14px;
+  height: 12px;
+  background: var(--paper);
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0 0 0 6px;
+  transform: rotate(-8deg);
+}
+body.comic #log > .msg.me .bubble::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: -9px;
+  width: 14px;
+  height: 12px;
+  background: var(--paper);
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0 0 6px 0;
+  transform: rotate(8deg);
+}
+
+/* ---------------- ④ 四层字体 ---------------- */
+/* L3 气泡正文：≥16pt、行高 1.65、**不加粗** */
+body.comic #log > .msg .bubble-text {
+  background: transparent !important;
+  font-family: "Smiley Sans", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 16.5px;
+  line-height: 1.65;
+  font-weight: 400 !important;
+  letter-spacing: .01em;
+  color: var(--text);
+}
+
+/* L2 标题 / 状态词 */
+body.comic #ai-name,
+body.comic .status-card > div:first-child {
+  font-family: "Smiley Sans", serif;
+  font-size: 20px;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em;
+}
+
+/* L4 界面小字：系统字体（与角色风格隔离） */
+body.comic .hint,
+body.comic .ft-stats,
+body.comic .ft-session-title,
+body.comic .ft-session-sub,
+body.comic .modal-text,
+body.comic .safety-card,
+body.comic .quick-replies button,
+body.comic input,
+body.comic .drawer label,
+body.comic .drawer .row span,
+body.comic .kicker {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  font-weight: 400;
+}
+
+/* 输入框与按钮：墨线 */
+body.comic #composer,
+body.comic .composer {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+}
+body.comic #btn-send {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+}
+body.comic .icon-btn,
+body.comic .btn {
+  border-radius: 10px;
+  border-color: var(--ink);
+  box-shadow: none;
+}
+
+/* 安全干预：**必须脱离漫画风**（系统字体、无描边、无网点） */
+body.comic .safety-card {
+  background: #fff;
+  border: 1px solid #C9C4BC !important;
+  border-radius: 4px !important;
+  color: #222 !important;
+}
+body.comic .safety-card h4 { font-weight: 600 !important; }
+
+/* 顶栏：44pt 轻量栏 */
+body.comic #topbar,
+body.comic .topbar {
+  border-bottom: 2px solid var(--ink);
+  background: transparent;
+}
+
+/* 禁止加粗（字体只有一个字重，加粗会静默回退系统字体） */
+body.comic b,
+body.comic strong,
+body.comic .bubble-text b {
+  font-weight: 400 !important;
+}
+
+/* 深色模式下保持墨线可读 */
+body.comic[data-night="1"] #log > .msg .bubble { border-color: #E8E6E1; }
+body.comic[data-night="1"] #log > .msg.ai .bubble::after,
+body.comic[data-night="1"] #log > .msg.me .bubble::after { border-color: #E8E6E1; }

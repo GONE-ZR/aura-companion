@@ -673,15 +673,27 @@
         } catch (e) { /* 视觉层出问题不许影响对话 */ }
       }
 
+      /* 模型偶尔不吐 JSON，而是吐 "calm, dusk, 0" 这种逗号列表 —— 也当标签剥掉 */
+      var TAGLIKE = /^\s*(calm|smile|soft|tease|sulky|serious|blank|tired)\s*[,，]\s*(warm|dusk|cool|gray)\s*[,，]\s*([0-2])\s*$/i;
+
       /* 首行是 {"e":...} 就剥掉并先切表情；不是就当正文 */
       function stripMeta(all) {
         if (!window.AuraMeta) return all;
         var nl = all.indexOf("\n");
         var head = nl === -1 ? all : all.slice(0, nl);
+
+        /* ① JSON 标签 */
         var parsed = window.AuraMeta.parseLine(head);
         if (parsed) {
           applyMetaOnce(parsed);
-          if (nl === -1) return "";              /* 标签还没收完，先不出字 */
+          if (nl === -1) return "";
+          return all.slice(nl + 1);
+        }
+        /* ② "calm, dusk, 0" 这种逗号列表（模型偶尔不吐 JSON） */
+        var m2 = head.match(TAGLIKE);
+        if (m2) {
+          applyMetaOnce({ e: m2[1].toLowerCase(), b: m2[2].toLowerCase(), i: Number(m2[3]) });
+          if (nl === -1) return "";
           return all.slice(nl + 1);
         }
         if (nl === -1 && head.trim().charAt(0) === "{") return "";   /* 可能是半个标签 */

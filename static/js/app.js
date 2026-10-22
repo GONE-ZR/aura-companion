@@ -954,6 +954,87 @@
       }
     } catch (e) { /* ignore */ }
 
+
+    /* ---------------- 15.14 IndexedDB：版本闸门 → 迁移 → 还原（不阻塞渲染） ---------------- */
+    try {
+      if (window.AuraDB) {
+        /* 后台跑，绝不等它；界面已经用 localStorage 渲染出来了 */
+        window.AuraDB.open()
+          .then(function () { return window.AuraDB.gate(); })
+          .then(function (g) {
+            window.__auraDbGate = g;
+            if (g.readOnly) {
+              console.warn("[idb] 只读模式：数据版本高于代码，禁止写入");
+              return null;
+            }
+            /* 先还原（localStorage 被系统清过的话），再迁移 */
+            return window.AuraDB.hydrate().then(function (restored) {
+              if (restored && Object.keys(restored).length) {
+                console.log("[idb] 已从 IndexedDB 还原", restored);
+              }
+              return window.AuraDB.migrate();
+            });
+          })
+          .then(function (rep) {
+            if (!rep) return;
+            window.__auraDbReport = rep;
+            var line = $("cfg-line");
+            if (rep.ok) {
+              console.log("[idb] 迁移完成", rep.before, "→", rep.after);
+            } else {
+              console.warn("[idb] 迁移未通过校验，继续用 localStorage", rep);
+            }
+          })
+          .catch(function (e) { console.warn("[idb] 初始化失败（继续用 localStorage）", e); });
+      }
+    } catch (e) { /* 存储层出错不许影响启动 */ }
+
+
+    /* ---------------- 15.15 漫画风 V0（第三篇）：网点四档 + 夜间转深 ---------------- */
+    try {
+      var comicOn = S.getStr("aura_comic", "") !== "0";     /* 默认开 */
+      if (comicOn) {
+        document.body.classList.add("comic");
+        /* 漫画风与 theme-soft 互斥：同一时间只用一套皮 */
+        document.body.setAttribute("data-soft", "0");
+      } else {
+        document.body.classList.remove("comic");
+      }
+
+      /* 状态 → 网点密度（第三篇 §1.2：稀疏 8% / 中 15% / 密 30% / 无） */
+      function applyDots(state) {
+        if (!comicOn) return;
+        var map = { calm: "8", soft: "8", tired: "15", low: "15", sulky: "8", serious: "30", blank: "0" };
+        document.body.setAttribute("data-dots", map[state] || "8");
+      }
+      /* 夜间（23:00~06:00）自动转深，不依赖深色开关 */
+      function applyNight() {
+        if (!comicOn) return;
+        var hh = new Date().getHours();
+        document.body.setAttribute("data-night", (hh >= 23 || hh < 6) ? "1" : "0");
+      }
+      var st0 = (window.Aura.chat && window.Aura.chat.engineState) ? window.Aura.chat.engineState() : null;
+      applyDots(st0 && st0.state);
+      applyNight();
+      setInterval(function () {
+        var st = (window.Aura.chat && window.Aura.chat.engineState) ? window.Aura.chat.engineState() : null;
+        applyDots(st && st.state);
+        applyNight();
+      }, 30000);
+
+      /* 设置开关 */
+      var cm = $("in-comic");
+      if (cm) {
+        cm.checked = comicOn;
+        cm.addEventListener("change", function () {
+          S.setStr("aura_comic", cm.checked ? "1" : "0");
+          document.body.classList.toggle("comic", cm.checked);
+          if (cm.checked) { applyDots((window.Aura.chat.engineState() || {}).state); applyNight(); }
+          toast(cm.checked ? "漫画风已开" : "回到暖纸风");
+        });
+      }
+    } catch (e) { /* ignore */ }
+
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {
       setTimeout(function () {
