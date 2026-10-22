@@ -156,6 +156,47 @@
     });
     page.appendChild(sec2);
 
+
+    /* ---- 已删除（回收站）：只显示名字与时间，不显示内容 ---- */
+    if (window.AuraRecycle) {
+      var sec4 = document.createElement("div");
+      sec4.style.cssText = "margin-top:26px";
+      var t4 = document.createElement("div");
+      t4.style.cssText = "font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim,#6b665d);margin-bottom:10px";
+      t4.textContent = "已删除";
+      sec4.appendChild(t4);
+
+      var trash = window.AuraRecycle.list();
+      if (!trash.length) {
+        var e4 = document.createElement("div");
+        e4.style.cssText = "font-size:13px;color:var(--dim,#6b665d);line-height:1.9";
+        e4.textContent = "没有删掉的东西。";
+        sec4.appendChild(e4);
+      }
+      trash.slice().reverse().forEach(function (it) {
+        var row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.07)";
+        var name = document.createElement("div");
+        name.style.cssText = "flex:1;font-size:14px";
+        /* 只有名字 + 删除日期，绝不放内容 */
+        var d = new Date(it.deletedAt);
+        name.textContent = it.label + "　" + (d.getMonth() + 1) + "月" + d.getDate() + "日删除";
+        var del = document.createElement("button");
+        del.className = "btn";
+        del.textContent = "彻底删除";
+        del.style.cssText = "font-size:12px;padding:5px 10px";
+        del.onclick = function () {
+          if (!window.confirm("彻底删除后不可恢复，确定？")) return;
+          window.AuraRecycle.purge(it.id);
+          row.remove();
+        };
+        row.appendChild(name);
+        row.appendChild(del);
+        sec4.appendChild(row);
+      });
+      page.appendChild(sec4);
+    }
+
     /* 纪念日 */
     var sec3 = document.createElement("div");
     sec3.style.cssText = "margin-top:26px;font-size:13px;color:var(--dim,#6b665d);line-height:1.9";

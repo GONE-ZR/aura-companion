@@ -662,6 +662,10 @@
           var obj;
           try { obj = JSON.parse(payloadStr); } catch (e) { return; }
           if (obj.error) throw new Error(obj.error);
+          /* 第六篇 §6：最后一帧带 usage（include_usage），只记数量不记内容 */
+          if (obj.usage && window.AuraUsage) {
+            try { window.AuraUsage.recordUsage(obj.usage, { model: obj.model || "" }); } catch (e) { }
+          }
           var delta = "";
           try { delta = (obj.choices && obj.choices[0].delta && obj.choices[0].delta.content) || ""; }
           catch (e) { delta = ""; }
@@ -752,6 +756,7 @@
       }
       messages.push(aiMsg);
       window.Aura.messages.save(messages);
+      try { if (window.AuraOffline) window.AuraOffline.noteOnline(); } catch (e) { }
       /* §九：每 7 轮抽一次记忆（后台跑，不阻塞） */
       try { recordTurn(); } catch (e) { /* ignore */ }
       try { maybeQuickReplies(text); } catch (e) { /* ignore */ }
@@ -776,6 +781,23 @@
       bubble.classList.remove("thinking");
       if (think && think.parentNode) think.parentNode.removeChild(think);
       if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
+
+      /* 第六篇 §2：断网 → 用本地短句回一句（不弹"网络异常"、不解释原因） */
+      if (window.AuraOffline && window.AuraOffline.looksOffline(err)) {
+        var st0 = engineState();
+        var off = window.AuraOffline.reply(st0 ? st0.state : "calm", userText);
+        try {
+          if (window.AuraEmotionUI) window.AuraEmotionUI.applyMeta({ e: off.e, b: off.b, i: 1 });
+        } catch (e) { /* ignore */ }
+        body.textContent = off.text;
+        aiMsg.content = off.text;
+        aiMsg.bubbleCount = 1;
+        messages.push(aiMsg);
+        window.Aura.messages.save(messages);
+        scrollToEnd(false);
+        setBusy(false);
+        return;
+      }
 
       if (body.textContent && body.textContent.length > 0) {
         /* 流中断：保留已收到的文字（19.5） */

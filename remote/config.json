@@ -41,5 +41,16 @@
     "wallpaperDim": 0
   },
   "updated_at": "2026-10-22T15:43:44Z",
-  "version": 22
+  "version": 23,
+  "flags": {
+    "weather": true,
+    "reminders": true,
+    "search": true,
+    "agentMode": true,
+    "voiceTts": true,
+    "lifeLine": true,
+    "memoryExtract": true,
+    "modelTier": "standard",
+    "killSwitch": false
+  }
 }

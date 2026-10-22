@@ -100,6 +100,43 @@
     if (A.apply && A.apply.wallpaper) A.apply.wallpaper();
   }
 
+
+  /* ---------------- 远程开关中心（第六篇 §5） ----------------
+     安全层不可被远程关闭：这里永远不碰 safety。
+     killSwitch = 全站降级为纯文本（关天气/提醒/搜索/agent/语音），保留对话、记忆、情绪。 */
+  function applyFlags(flags) {
+    if (!flags) return;
+    var kill = !!flags.killSwitch;
+    var eff = {};
+    ["weather", "reminders", "search", "agentMode", "voiceTts", "lifeLine", "memoryExtract"].forEach(function (k) {
+      eff[k] = kill ? false : flags[k] !== false;
+    });
+    /* 用 data-flag 挂在 body 上，CSS/JS 各自按需读；只隐藏入口，不删数据 */
+    Object.keys(eff).forEach(function (k) {
+      document.body.setAttribute("data-flag-" + k, eff[k] ? "1" : "0");
+    });
+    document.body.setAttribute("data-killswitch", kill ? "1" : "0");
+    /* 强制降档（运营用） */
+    if (flags.modelTier === "standard" || flags.modelTier === "delicate") {
+      A.store.setStr("aura_tier_forced", flags.modelTier);
+    } else {
+      A.store.setStr("aura_tier_forced", "");
+    }
+    /* 隐藏对应入口（有就藏，没有就算了） */
+    var byFlag = {
+      weather: "[data-feature='weather']",
+      reminders: "[data-feature='reminders']",
+      search: "[data-feature='search']",
+      agentMode: "#mode-btn,[data-feature='agentMode']",
+      voiceTts: "[data-feature='voice']"
+    };
+    Object.keys(byFlag).forEach(function (k) {
+      var nodes = document.querySelectorAll(byFlag[k]);
+      for (var i = 0; i < nodes.length; i++) nodes[i].hidden = !eff[k];
+    });
+    /* 绝不触碰：安全层 / 情绪引擎 / 记忆 */
+  }
+
   function applyFeatures(f) {
     if (!f) return;
     var nodes = document.querySelectorAll("[data-feature]");
@@ -209,6 +246,7 @@
       A.store.set("aura_remote_cfg_cache", cfg);
       applyTheme(cfg.theme);
       applyFeatures(cfg.features);
+      applyFlags(cfg.flags);
       applyText(cfg.text);
       applyShortcuts(cfg.shortcuts);
       applyIcon(cfg.icon);
@@ -268,6 +306,7 @@
       state.version = cfg.version;
       applyTheme(cfg.theme);
       applyFeatures(cfg.features);
+      applyFlags(cfg.flags);
       applyText(cfg.text);
       applyShortcuts(cfg.shortcuts);
       applyIcon(cfg.icon);

@@ -869,6 +869,20 @@
             adv.hidden = false;
             taps = 0;
             toast("已显示模型与接口（调试信息）");
+            /* 第六篇 §6：成本与额度（只给开发者看，用户界面不出现） */
+            try {
+              if (window.AuraUsage) {
+                var us = window.AuraUsage.summary();
+                var line = $("model-adv-line");
+                if (line) {
+                  line.textContent = "当前线路：主线路 · 今日 " + us.requests + " 次 · " +
+                    Math.round(us.tokens / 1000) + "k tokens · 缓存命中 " +
+                    Math.round(us.hitRate * 100) + "%";
+                  var al2 = window.AuraUsage.alarms();
+                  if (al2.length) toast(al2[0]);
+                }
+              }
+            } catch (e) { /* ignore */ }
           }
         });
         /* 连续 fallback 3 轮后显示"当前使用备用线路"（§8） */
