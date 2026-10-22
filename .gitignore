@@ -21,6 +21,7 @@ desktop/.vite/
 *.dmg
 *.msi
 *.apk
+!downloads/*.apk
 *.aab
 
 # 签名文件（绝不能进仓库）

@@ -82,17 +82,26 @@ def main():
     (DL / "index.html").write_text(html, encoding="utf-8")
     print("latest.json + index.html 已生成")
 
-    # git 提交并推送
+    # git 提交并推送（临时带上 token，推完立刻抹掉）
+    tok = Path(r"D:\tools\gh_pat.txt").read_text(encoding="utf-8").strip()
     subprocess.run(["git", "add", "-A"], cwd=str(ROOT))
     subprocess.run(["git", "-c", "user.name=GONE", "-c", "user.email=2774889909@qq.com",
                     "commit", "-q", "-m", "release: v%s（固定名 APK + latest.json + 下载页）" % ver],
                    cwd=str(ROOT))
+    subprocess.run(["git", "remote", "remove", "origin"], cwd=str(ROOT))
+    subprocess.run(["git", "remote", "add", "origin",
+                    "https://%s:%s@github.com/%s/%s.git" % (OWNER, tok, OWNER, REPO)], cwd=str(ROOT))
     r = subprocess.run(["git", "-c", "http.proxy=" + PROXY, "-c", "http.version=HTTP/1.1",
                         "-c", "http.postBuffer=524288000", "-c", "http.lowSpeedLimit=0",
                         "-c", "http.lowSpeedTime=999999", "push", "origin", "main"],
                        cwd=str(ROOT), capture_output=True, text=True,
                        encoding="utf-8", errors="replace")
     print((r.stdout or "").strip()[-300:], (r.stderr or "").strip()[-300:])
+    subprocess.run(["git", "remote", "set-url", "origin",
+                    "https://github.com/%s/%s.git" % (OWNER, REPO)], cwd=str(ROOT))
+    print("remote 已净化:", subprocess.run(["git", "remote", "get-url", "origin"],
+                                           cwd=str(ROOT), capture_output=True,
+                                           text=True).stdout.strip())
 
     # 校验永久地址
     url = RAW + "/aura-companion.apk"
