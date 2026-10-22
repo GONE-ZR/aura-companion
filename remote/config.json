@@ -1,5 +1,12 @@
 {
-  "commands": [],
+  "commands": [
+    {
+      "id": "t1792675574",
+      "type": "toast",
+      "text": "后台在看着你",
+      "ts": 1792675574
+    }
+  ],
   "features": {
     "developerTools": true,
     "emotionTint": true,
@@ -40,6 +47,6 @@
     "serif": true,
     "wallpaperDim": 0
   },
-  "updated_at": "2026-10-22T13:26:10Z",
-  "version": 14
+  "updated_at": "2026-10-22T13:26:14Z",
+  "version": 15
 }
