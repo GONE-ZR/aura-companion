@@ -45,3 +45,9 @@ tests/_tts_sample.mp3
 
 # GitHub 令牌（绝不进仓库）
 .gh_token
+
+# 本机自动化脚本（含个人信息，不进公开仓库）
+tools/_*.py
+tools/_*.js
+tools/cdp.js
+.gh_token
