@@ -10,7 +10,7 @@ import requests
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-LOCAL_APK = r"C:\Users\27748\Desktop\安静陪伴.apk"
+LOCAL_APK = r"D:\opencode workspace\aura-companion\downloads\aura-companion.apk"
 PAGES = "https://gone-zr.github.io/aura-companion/"
 PROXY = "https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/"
 
