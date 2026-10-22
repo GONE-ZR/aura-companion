@@ -11,11 +11,21 @@
   /* 当前版本 —— 每次发版记得改这里 */
   var CURRENT = "1.0.2";
 
-  /* 默认清单地址（仓库里的 latest.json，随 Release 一起更新） */
-  var DEFAULT_MANIFEST = "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json";
+  /* 清单地址：国内直连 raw 是被墙的，所以优先用加速通道。
+     gh-proxy.com（实测 1.1 秒）→ GitHub Pages（自己的域名）→ raw（备用） */
+  var MANIFESTS = [
+    "https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json",
+    "https://gone-zr.github.io/aura-companion/downloads/latest.json",
+    "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json"
+  ];
+
+  function manifestList() {
+    var custom = A.store.getStr("aura_update_url", "");
+    return custom ? [custom].concat(MANIFESTS) : MANIFESTS;
+  }
 
   function manifestUrl() {
-    return A.store.getStr("aura_update_url", "") || DEFAULT_MANIFEST;
+    return manifestList()[0];
   }
 
   function cmpVer(a, b) {
@@ -29,18 +39,27 @@
     return 0;
   }
 
+  /* 依次试多个通道，第一个拿到的算 */
   function check() {
-    return fetch(manifestUrl(), { cache: "no-store" })
-      .then(function (r) {
-        if (!r.ok) throw new Error("http " + r.status);
-        return r.json();
-      })
-      .then(function (m) {
-        if (!m || !m.version) throw new Error("bad manifest");
-        if (cmpVer(m.version, CURRENT) <= 0) return null;   /* 已是最新 */
-        return m;
-      })
-      .catch(function () { return null; });
+    var list = manifestList();
+    var i = 0;
+    function next() {
+      if (i >= list.length) return Promise.resolve(null);
+      var u = list[i++];
+      return fetch(u, { cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("http " + r.status);
+          return r.json();
+        })
+        .then(function (m) {
+          if (!m || !m.version) throw new Error("bad manifest");
+          if (cmpVer(m.version, CURRENT) <= 0) return null;   /* 已是最新 */
+          m._source = u;
+          return m;
+        })
+        .catch(function () { return next(); });
+    }
+    return next().catch(function () { return null; });
   }
 
   function showBar(m) {
@@ -52,7 +71,21 @@
     if (btn) {
       btn.textContent = "下载新版";
       btn.onclick = function () {
-        window.open(m.url || m.apk, "_blank");
+        /* 下载走能通的通道（gh-proxy 优先，APK 里 WebView 用 _system 交给系统浏览器） */
+        var name = (m.apk || "aura-companion.apk");
+        var url = "https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/" + name;
+        var opened = null;
+        try { opened = window.open(url, "_system"); } catch (e) { opened = null; }
+        if (!opened) {
+          try { opened = window.open(url, "_blank"); } catch (e2) { opened = null; }
+        }
+        if (!opened) {
+          /* 兜底：把地址摆出来，长按复制或用系统浏览器打开 */
+          if (A.ui && A.ui.toast) {
+            A.ui.toast("没打开？复制这个地址到浏览器：" + url);
+          }
+          try { window.prompt("下载地址（复制到浏览器打开）", url); } catch (e3) { }
+        }
       };
     }
     bar.hidden = false;

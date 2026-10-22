@@ -13,6 +13,9 @@
   var A = window.Aura;
   if (!A) return;
 
+  /* 三个来源：gh-proxy（实测最快）→ GitHub Pages → raw（国内多半被墙，垫底） */
+  var URL_PROXY = "https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/remote/config.json";
+  var URL_PAGES = "https://gone-zr.github.io/aura-companion/remote/config.json";
   var DEFAULT_URL = "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/remote/config.json";
   var state = { config: null, version: -1, lastError: null, appliedAt: 0 };
 
@@ -26,7 +29,7 @@
     var custom = A.store.getStr("aura_remote_cfg", "");
     if (custom) out.push(custom);
     if (String(location.protocol).indexOf("http") === 0) out.push("/remote/config.json");
-    out.push(DEFAULT_URL);
+    out.push(URL_PROXY, URL_PAGES, DEFAULT_URL);
     return out;
   }
 

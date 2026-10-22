@@ -134,14 +134,21 @@ Render 免费版闲置 15 分钟会休眠，冷启动 30–60 秒。**这不影�
 
 ```
 永久下载地址（每次发版覆盖同一个文件 ⇒ 二维码永远不变、永远是最新版）
-https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk
+https://gone-zr.github.io/aura-companion/downloads/aura-companion.apk      ← 主用（国内约 1 秒）
+https://gh-proxy.com/https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk   ← 备用加速
+https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk                        ← 原始（国内多半被墙）
 
 版本清单（App 读它判断有没有新版）
-https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json
+https://gone-zr.github.io/aura-companion/downloads/latest.json
 
 下载页（给人看的）
-https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/index.html
+https://gone-zr.github.io/aura-companion/downloads/index.html
 ```
+
+> **为什么要三条**：`raw.githubusercontent.com` 在国内被 DNS 污染/连接重置，
+> 手机直接拉会失败。所以 App 里按 **gh-proxy → GitHub Pages → raw** 的顺序逐个试
+> （`static/js/updater.js` 与 `static/js/remote-config.js` 都是这个顺序）。
+> 实测（本机不走代理）：gh-proxy 1.0 秒、Pages 1.1 秒、raw 直接失败。
 
 * 桌面的 `扫码下载APK.png` 就是上面第一条 → **扫一次，以后每次发新版都不用重扫**。
 * 已装的 App 每次启动会读 `latest.json`，有新版就在顶部显示「有新版 vX.X.X · 下载新版」。

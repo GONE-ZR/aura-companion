@@ -15,7 +15,7 @@ sys.path.insert(0, r"D:\tools\py-packages")
 
 ROOT = Path(r"D:\opencode workspace\aura-companion")
 DESKTOP = Path(r"C:\Users\27748\Desktop")
-RAW = "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads"
+RAW = "https://gone-zr.github.io/aura-companion/downloads"   # 国内可直连（raw.githubusercontent 被墙）
 
 APK_URL = RAW + "/aura-companion.apk"
 PAGE_URL = RAW + "/index.html"
