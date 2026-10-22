@@ -1,0 +1,111 @@
+/* ============================================================
+   emotion.css —— 五通道的视觉部分（背景 / 姿态 / 气泡节奏）
+
+   背景四色（warm / dusk / cool / gray）用一层伪元素做渐变，
+   过渡 900ms（任务书要求 600–1200ms 缓动）。
+   姿态用 transform 做微差（没有立绘资源时的程序化占位）。
+   ============================================================ */
+
+/* 背景氛围层：挂在 body 上，不吃点击 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 900ms ease, background 900ms ease;
+}
+
+body[data-bg="warm"]::after {
+  opacity: 1;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(255, 226, 196, 0.55), transparent 62%);
+}
+body[data-bg="dusk"]::after {
+  opacity: 1;
+  background: radial-gradient(120% 85% at 50% 0%, rgba(255, 176, 120, 0.45), rgba(120, 80, 120, 0.18) 60%, transparent 78%);
+}
+body[data-bg="cool"]::after {
+  opacity: 1;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(176, 206, 232, 0.42), transparent 64%);
+}
+body[data-bg="gray"]::after {
+  opacity: 1;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(170, 172, 176, 0.34), transparent 62%);
+}
+
+/* 夜间主题下压暗一点，别刺眼 */
+body[data-theme="dark"]::after { filter: brightness(0.72) saturate(0.9); }
+
+/* ---------------- 姿态（程序化占位） ---------------- */
+/* 顶栏那一小块头像区域，按状态做极轻微的位移/倾斜，配合呼吸 */
+#ft-face,
+.ft-face {
+  transition: transform 900ms cubic-bezier(.22, .61, .36, 1);
+  will-change: transform;
+}
+
+body[data-pose="front"]  #ft-face, body[data-pose="front"]  .ft-face { transform: none; }
+body[data-pose="shrink"] #ft-face, body[data-pose="shrink"] .ft-face { transform: translateY(1px) scale(0.94) rotate(-3deg); }
+body[data-pose="arms"]   #ft-face, body[data-pose="arms"]   .ft-face { transform: rotate(-6deg) translateX(-1px); }
+body[data-pose="upright"]#ft-face, body[data-pose="upright"].ft-face,
+body[data-pose="upright"] .ft-face { transform: translateY(-1px) scale(1.02); }
+body[data-pose="formal"] #ft-face, body[data-pose="formal"] .ft-face { transform: scale(0.98); opacity: .9; }
+
+/* ---------------- 气泡语气（§七 表：正常/累/带刺/极短/客气） ---------------- */
+#log > .msg .bubble {
+  transition: border-radius 600ms ease, padding 600ms ease, opacity 600ms ease;
+}
+
+/* 累：短、少标点（用更紧的行距与更淡的字重表达） */
+body[data-bubble="terse"] #log > .msg.ai .bubble-text {
+  line-height: 1.55;
+  letter-spacing: .01em;
+}
+
+/* 带刺：偏硬、直角一点 */
+body[data-bubble="prickly"] #log > .msg.ai .bubble {
+  border-radius: 4px 14px 14px 14px;
+}
+
+/* 极短：更小的内边距，像甩出来的 */
+body[data-bubble="clipped"] #log > .msg.ai .bubble {
+  padding: 10px 14px;
+  border-radius: 3px 12px 12px 12px;
+}
+
+/* 客气：标准、无语气词（视觉上更规整） */
+body[data-bubble="plain"] #log > .msg.ai .bubble-text {
+  letter-spacing: .015em;
+}
+
+/* ---------------- 危机卡片（§八 UI 插求助卡片） ---------------- */
+.safety-card {
+  margin: 14px 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(181, 58, 42, .35);
+  background: rgba(181, 58, 42, .06);
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.safety-card h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b53a2a;
+  letter-spacing: .02em;
+}
+.safety-card a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.safety-card .nums { margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+/* 危机轮的助手气泡不用普通样式 */
+#log > .msg.ai.safety-bubble .bubble {
+  background: transparent !important;
+  border: 1px dashed rgba(181, 58, 42, .45) !important;
+  box-shadow: none !important;
+}

@@ -44,7 +44,14 @@ appjs = z.read("assets/public/static/js/app.js").decode("utf-8", "replace")
 check("APK 判断了 Capacitor（不注册 SW）", "isNativePlatform" in appjs)
 check("有密钥提示逻辑（key-bar）", "key-bar" in appjs)
 upd = z.read("assets/public/static/js/updater.js").decode("utf-8", "replace")
-check("updater 版本号 = 1.0.4", 'var CURRENT = "1.0.4"' in upd)
+import re as _re
+_local_upd = Path(r"D:\opencode workspace\aura-companion\static\js\updater.js").read_text(encoding="utf-8")
+_m = _re.search(r'var CURRENT = "([0-9.]+)"', _local_upd)
+_want = _m.group(1) if _m else "?"
+check("updater 版本号与源码一致（%s）" % _want, ('var CURRENT = "%s"' % _want) in upd, upd[:40])
+check("新模块都打进包了（engine/prompt/safety/memfacts/meta/emotion-ui）",
+      all(("assets/public/static/js/%s.js" % n) in names for n in
+          ["engine", "prompt", "safety", "memfacts", "meta", "emotion-ui", "review"]))
 check("下载走 gh-proxy", "gh-proxy.com" in upd)
 
 z.close()

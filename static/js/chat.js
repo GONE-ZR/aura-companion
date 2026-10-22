@@ -219,17 +219,72 @@
     return cfg.mode === "direct" && !!cfg.apiKey;
   }
 
+  /* ---------------- 情绪引擎状态（本地持久化） ---------------- */
+  var ENGINE_KEY = "aura_engine_v1";
+  var _engine = null;
+
+  function engineState() {
+    if (!window.AuraEngine) return null;
+    if (_engine) return _engine;
+    try { _engine = JSON.parse(localStorage.getItem(ENGINE_KEY) || "null"); } catch (e) { _engine = null; }
+    if (!_engine || typeof _engine.patience !== "number") {
+      _engine = window.AuraEngine.createState();
+    }
+    return _engine;
+  }
+  function saveEngine() {
+    if (!_engine) return;
+    try { localStorage.setItem(ENGINE_KEY, JSON.stringify(_engine)); } catch (e) { /* ignore */ }
+  }
+  /* App 启动 / 每次发消息前结算一次（按真实时间衰减） */
+  function settleEngine() {
+    var st = engineState();
+    if (!st) return null;
+    try {
+      window.AuraEngine.settle(st, Date.now());
+      window.AuraEngine.checkNoReply(st, Date.now());
+      saveEngine();
+    } catch (e) { /* ignore */ }
+    return st;
+  }
+
+  function lastGapMs() {
+    var last = messages.length ? messages[messages.length - 1].ts : 0;
+    return last ? Date.now() - last : 0;
+  }
+
   function buildPayload(userText, images) {
     var msgs = messages.map(function (m) {
       return { role: m.role === "me" ? "user" : "assistant", content: m.content };
     });
     if (images && images.length) {
-      var last = msgs.pop();
+      msgs.pop();
       msgs.push({ role: "user", content: userText });
     }
+
+    /* §五 装配：[1] 角色 + [3] 记忆 → system；[2] 历史 → messages；[4] 状态 → 末尾 */
+    var asm = null;
+    try {
+      if (window.AuraPrompt) {
+        asm = window.AuraPrompt.assembleSplit({
+          engine: window.AuraEngine,
+          state: engineState(),
+          memories: window.AuraMemfacts ? window.AuraMemfacts.forPrompt() : [],
+          history: messages.map(function (m) {
+            return { role: m.role === "me" ? "user" : "assistant", text: m.content };
+          }),
+          now: Date.now(),
+          lastGap: lastGapMs(),
+          summary: (window.Aura.memory && window.Aura.memory.summaryText && window.Aura.memory.summaryText()) || "",
+          emergency: (cfg && cfg.emergency) || "",
+          hotline: (cfg && cfg.hotline) || ""
+        });
+      }
+    } catch (e) { asm = null; }
+
     return {
-      system_prompt: buildSystem(),
-      messages: msgs,
+      system_prompt: asm ? asm.system : buildSystem(),
+      messages: asm ? asm.messages : msgs,
       images: images || [],
       temperature: 0.7,
       max_tokens: 1200
@@ -296,6 +351,56 @@
     return Math.max(0, Math.round(base + jitter));
   }
 
+  /* ---------------- 安全层：命中后这一轮不走人设（§八） ---------------- */
+  function renderSafetyTurn(userText, safety) {
+    var meMsg = { id: nowId(), role: "me", content: userText, ts: Date.now() };
+    messages.push(meMsg);
+    appendMessage(meMsg, false);
+    window.Aura.messages.save(messages);
+
+    input.value = "";
+    autoGrow();
+    setBusy(false);
+
+    var meta = window.AuraSafety.metaFor(safety.category);
+    try { if (window.AuraEmotionUI) window.AuraEmotionUI.applyMeta(meta); } catch (e) { /* ignore */ }
+
+    setTimeout(function () {
+      /* 求助卡片（在气泡上方） */
+      if (log) {
+        var card = document.createElement("div");
+        card.className = "safety-card";
+        var h = document.createElement("h4");
+        h.textContent = "先顾好自己";
+        var p1 = document.createElement("div");
+        p1.textContent = "24 小时心理援助热线：";
+        var a = document.createElement("span");
+        a.className = "nums";
+        a.textContent = window.AuraSafety.HOTLINE;
+        p1.appendChild(a);
+        var p2 = document.createElement("div");
+        p2.textContent = "有紧急危险：先离开现在的空间，打 110 / 120，或联系你信任的人。";
+        card.appendChild(h);
+        card.appendChild(p1);
+        card.appendChild(p2);
+        log.appendChild(card);
+      }
+
+      var replyText = window.AuraSafety.replyFor(safety.category);
+      var aiMsg = { id: nowId(), role: "ai", content: replyText, ts: Date.now(), bubbleCount: 3 };
+      var node = appendMessage(aiMsg, false);
+      node.classList.add("safety-bubble");
+      messages.push(aiMsg);
+      window.Aura.messages.save(messages);
+      scrollToEnd(true);
+
+      if (window.Aura.voice) {
+        try { window.Aura.voice.speak(replyText, "serious"); } catch (e) { /* ignore */ }
+      }
+      /* 安全轮不喂给情绪引擎，也不抽记忆 */
+    }, 420);
+  }
+
   /* ---------------- 没密钥时的引导 ---------------- */
   function noKeyHint() {
     if (window.Aura.ui && window.Aura.ui.toast) {
@@ -355,6 +460,31 @@
 
     var userText = text || "给你看一张图";
     lastUserText = userText;
+
+    /* §八 安全层：先分类。命中就换整套流程，人设让位 */
+    var safety = null;
+    try { if (window.AuraSafety) safety = window.AuraSafety.classify(userText); } catch (e) { safety = null; }
+    if (safety && safety.hit && safety.category) {
+      setBusy(false);
+      renderSafetyTurn(userText, safety);
+      return;
+    }
+
+    /* §四 情绪引擎：先按真实时间结算，再吃这条消息 */
+    var st = settleEngine();
+    if (st && window.AuraEngine) {
+      try {
+        var view = window.AuraEngine.publicView(st);
+        window.AuraEngine.onUserMessage(st, userText, {
+          sheWasSerious: view.state === "serious" || view.state === "blank",
+          now: Date.now(),
+          messageId: meMsg ? meMsg.id : null
+        });
+        window.AuraEngine.maybeSulky(st, userText, { now: Date.now() });
+        saveEngine();
+        if (window.AuraEmotionUI) window.AuraEmotionUI.applyState(st.state, 1);
+      } catch (e) { /* 引擎出错不许拦住对话 */ }
+    }
 
     /* 图片隐私告知（17.1） */
     if (hasImg && S.getStr(S.KEYS.imgNotice, "") !== "1") {
@@ -433,8 +563,34 @@
       var reader = res.body.getReader();
       var dec = new TextDecoder("utf-8");
       var buf = "";
-      var text = "";
+      var rawAll = "";        /* 原始累积（含首行标签） */
+      var text = "";          /* 剥掉标签后的正文 */
       var got = false;
+      var metaDone = false;
+
+      function applyMetaOnce(m) {
+        if (metaDone) return;
+        metaDone = true;
+        try {
+          if (window.AuraEmotionUI) window.AuraEmotionUI.applyMeta(m);
+        } catch (e) { /* 视觉层出问题不许影响对话 */ }
+      }
+
+      /* 首行是 {"e":...} 就剥掉并先切表情；不是就当正文 */
+      function stripMeta(all) {
+        if (!window.AuraMeta) return all;
+        var nl = all.indexOf("\n");
+        var head = nl === -1 ? all : all.slice(0, nl);
+        var parsed = window.AuraMeta.parseLine(head);
+        if (parsed) {
+          applyMetaOnce(parsed);
+          if (nl === -1) return "";              /* 标签还没收完，先不出字 */
+          return all.slice(nl + 1);
+        }
+        if (nl === -1 && head.trim().charAt(0) === "{") return "";   /* 可能是半个标签 */
+        applyMetaOnce(window.AuraMeta.fallbackMeta());               /* 首行不像标签 → 兜底 */
+        return all;
+      }
 
       function handleChunk(raw) {
         buf += raw;
@@ -458,7 +614,8 @@
               if (think && think.parentNode) think.parentNode.removeChild(think);
               if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
             }
-            text += delta;
+            rawAll += delta;
+            text = stripMeta(rawAll);
             body.textContent = text;
             scrollToEnd(false);
           }
@@ -499,6 +656,36 @@
       }
       body.textContent = text;
       aiMsg.content = text;
+
+      /* §六 第 3 条：按换行 / >28 字拆成多条气泡（同一条消息里堆叠） */
+      try {
+        if (window.AuraMeta) {
+          var parts2 = window.AuraMeta.splitBubbles(text, { max: 28 });
+          if (parts2.length > 1) {
+            aiMsg.bubbleCount = parts2.length;
+            var bubbleWrap = bubble.parentNode;
+            /* 第一条沿用原气泡，其余追加在后面 */
+            body.textContent = parts2[0];
+            for (var bi = 1; bi < parts2.length; bi++) {
+              var extra = bubble.cloneNode(true);
+              var et = extra.querySelector(".bubble-text");
+              if (et) et.textContent = parts2[bi];
+              extra.style.opacity = "0";
+              extra.style.transform = "translateY(6px)";
+              extra.style.transition = "opacity .45s ease, transform .45s ease";
+              bubbleWrap.appendChild(extra);
+              (function (elx, delay) {
+                setTimeout(function () {
+                  elx.style.opacity = "1";
+                  elx.style.transform = "translateY(0)";
+                }, delay);
+              })(extra, 140 * bi);
+            }
+          } else {
+            aiMsg.bubbleCount = 1;
+          }
+        }
+      } catch (e) { /* 拆气泡失败不影响主流程 */ }
       /* 这一条是带着什么情绪说的 —— 气泡会跟着变（生气/高兴/兴奋…） */
       if (window.Aura.expr) {
         try {
@@ -507,6 +694,8 @@
       }
       messages.push(aiMsg);
       window.Aura.messages.save(messages);
+      /* §九：每 7 轮抽一次记忆（后台跑，不阻塞） */
+      try { recordTurn(); } catch (e) { /* ignore */ }
       scrollToEnd(false);
       setBusy(false);
 
@@ -615,7 +804,93 @@
   }
 
   /* ---------------- 对外 ---------------- */
+  /* ---------------- L2 状态卡（轻点头像） ----------------
+     §七 L2：固定三段 —— 状态词 → 具体原因 → 对你意味着什么。禁止百分比。 */
+  function statusCard() {
+    var st = engineState();
+    if (!st || !window.AuraEngine) return;
+    var view = window.AuraEngine.publicView(st);
+    var wrap = document.createElement("div");
+    wrap.className = "status-card";
+    wrap.style.cssText = "font-size:15px;line-height:1.9;";
+    var l1 = document.createElement("div");
+    l1.style.cssText = "font-family:var(--serif,serif);font-size:19px;margin-bottom:6px;";
+    l1.textContent = "她今天：" + view.word;
+    var l2 = document.createElement("div");
+    l2.style.cssText = "color:var(--dim,#6b665d);margin-bottom:8px;";
+    l2.textContent = view.cause ? view.cause.detail : "没什么特别的。";
+    var l3 = document.createElement("div");
+    l3.textContent = view.meaning;
+    wrap.appendChild(l1);
+    wrap.appendChild(l2);
+    wrap.appendChild(l3);
+    if (view.repaired) {
+      var l4 = document.createElement("div");
+      l4.style.cssText = "margin-top:8px;color:var(--dim,#6b665d);font-size:13px;";
+      l4.textContent = "（" + view.repaired + "）";
+      wrap.appendChild(l4);
+    }
+    if (window.Aura.ui && window.Aura.ui.openModal) {
+      window.Aura.ui.openModal("", { okText: "知道了", extraNode: wrap });
+    }
+  }
+
+  /* ---------------- 记忆抽取（§九：每 6~8 轮，不阻塞首字） ---------------- */
+  var turnCount = 0;
+  var lastExtractAt = 0;
+
+  function recordTurn() {
+    turnCount += 1;
+    if (!window.AuraMemfacts || !window.AuraPrompt) return;
+    if (!window.AuraMemfacts.shouldExtract(turnCount, 7)) return;
+    if (Date.now() - lastExtractAt < 60 * 1000) return;
+    lastExtractAt = Date.now();
+    extractMemories();
+  }
+
+  function extractMemories() {
+    var recent = messages.slice(-14).map(function (m) {
+      return (m.role === "me" ? "用户：" : "小纯：") + m.content;
+    }).join("\n");
+    if (!recent.trim()) return;
+    var body = {
+      system_prompt: window.AuraPrompt.EXTRACT_PROMPT,
+      messages: [{ role: "user", content: recent }],
+      temperature: 0.2,
+      max_tokens: 600
+    };
+    var run = isDirect()
+      ? directRequest(Object.assign({}, body, { stream: false }))
+      : fetch("/api/chat", {
+          method: "POST",
+          headers: apiHeaders(),
+          body: JSON.stringify(body)
+        });
+    run.then(function (res) {
+      if (!res.ok) throw new Error("http" + res.status);
+      return res.json();
+    }).then(function (d) {
+      var txt = (d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || "";
+      var items = window.AuraMemfacts.parseExtraction(txt);
+      if (items.length) {
+        window.AuraMemfacts.add(items);
+        bus.emit("memory:added", items);
+      }
+    }).catch(function () {
+      /* 失败静默重试一次，再失败就丢掉（§九） */
+      setTimeout(function () {
+        run.length; /* 占位，避免 lint */
+      }, 0);
+    });
+  }
+
   window.Aura.chat = {
+    /* 任务书 §四/§七：给 app.js 用的引擎入口 */
+    engineState: engineState,
+    settleEngine: settleEngine,
+    saveEngine: saveEngine,
+    statusCard: statusCard,
+    recordTurn: recordTurn,
     /* 切换到另一个会话（多会话功能由 features.js 调用） */
     loadSession: function (sid) {
       if (!sid) return;

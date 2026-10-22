@@ -672,6 +672,14 @@
       updatePending = false;
       S.set(S.KEYS.updateSkipped, { v: "skip-" + Date.now() });
     });
+    var rv = $("btn-review");
+    if (rv && !rv.getAttribute("data-bound")) {
+      rv.setAttribute("data-bound", "1");
+      rv.addEventListener("click", function () {
+        if (window.AuraReview) window.AuraReview.open();
+      });
+    }
+
     var cu = $("btn-check-update");
     if (cu) cu.addEventListener("click", function () {
       if (!REG) {
@@ -715,6 +723,33 @@
 
     /* 15.8 密钥相关：没密钥就常驻提示 + 设置里加个"测一下" */
     initKeyTools();
+
+    /* 15.9 任务书：启动时按真实时间结算情绪（§四 防呆 3），并同步五通道 */
+    try {
+      if (window.Aura.chat && window.Aura.chat.settleEngine && window.AuraEngine) {
+        var _st = window.Aura.chat.settleEngine();
+        if (_st && window.AuraEmotionUI) {
+          window.AuraEmotionUI.applyState(_st.state, 1);
+        }
+        /* L3：每天记一笔（只给回顾页画曲线用，主界面看不到任何数值） */
+        if (_st && window.AuraReview) window.AuraReview.logToday(_st.state);
+      }
+    } catch (e) { /* ignore */ }
+
+    /* 15.9b L2 状态卡：点头像 / 点名字都出来（三段式，无百分比） */
+    try {
+      var cardTargets = [document.getElementById("ai-name")];
+      var faceBtn = document.querySelector(".ft-face");
+      if (faceBtn) cardTargets.push(faceBtn);
+      cardTargets.forEach(function (elm) {
+        if (!elm || elm.getAttribute("data-status-bound") === "1") return;
+        elm.setAttribute("data-status-bound", "1");
+        elm.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          if (window.Aura.chat && window.Aura.chat.statusCard) window.Aura.chat.statusCard();
+        });
+      });
+    } catch (e) { /* ignore */ }
 
     /* 16. 存储不可用提示（启动时就说，不要等用户试壁纸） */
     if (!S.storageOK) {

@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/static/css/app.css">
 <link rel="stylesheet" href="/static/css/polish.css">
 <link rel="stylesheet" href="/static/css/remote.css">
+<link rel="stylesheet" href="/static/css/emotion.css">
 <!-- 柔和流动主题（新增 · 不加 data-soft="1" 时零影响） -->
 <link rel="stylesheet" href="/static/css/theme-soft.css">
 </head>
@@ -258,6 +259,7 @@
     </div>
     <div class="drawer-item" style="--i:2">
       <p class="tiny" id="version-line">版本</p>
+      <button id="btn-review" class="btn">回顾</button>
       <button id="btn-check-update" class="btn">检查更新</button>
     </div>
   </div>
@@ -305,6 +307,13 @@
 <div id="toast" hidden></div>
 
 <script src="/static/js/settings.js"></script>
+<script src="/static/js/engine.js"></script>
+<script src="/static/js/prompt.js"></script>
+<script src="/static/js/safety.js"></script>
+<script src="/static/js/memfacts.js"></script>
+<script src="/static/js/meta.js"></script>
+<script src="/static/js/emotion-ui.js"></script>
+<script src="/static/js/review.js"></script>
 <script src="/static/js/theme-soft.js"></script>
 <script src="/static/js/expressions.js"></script>
 <script src="/static/js/updater.js"></script>
