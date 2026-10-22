@@ -245,6 +245,19 @@ def build():
                ("Render 免费版闲置 15 分钟会休眠，冷启动 30–60 秒。"
                 "但**电脑关机不影响它** —— 服务器在云上。", False, None)])
 
+    h2(doc, "以后有新版，怎么在手机上拿到")
+    bullet(doc, "**扫一次就够，以后不用再扫。** 桌面上的「扫码下载APK.png」指向一个固定地址，"
+                "每次发新版都覆盖同一个文件，所以它永远是最新版。")
+    bullet(doc, "已经装好的 App 也会自己发现更新：顶部会出现一条「有新版 vX.X.X · 下载新版」，"
+                "点一下就下载新安装包。")
+    bullet(doc, "下载地址（永久有效，不用记）：")
+    para(doc, "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk",
+         size=9)
+    bullet(doc, "版本清单（App 就是读它来判断有没有新版）：")
+    para(doc, "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json",
+         size=9)
+    bullet(doc, "换手机 / 重装系统，扫这张码就能重新下。")
+
     h2(doc, "两种连接方式的区别")
     table(doc, ["连接方式", "要不要服务器", "电脑关机能用吗", "朗读音色"], [
         ["手机直连（默认）", "不要", "能", "系统语音（安卓/浏览器自带）"],

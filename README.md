@@ -130,6 +130,25 @@ python tools/lan_info.py 8000        # 打印局域网网址 + 二维码
 
 Render 免费版闲置 15 分钟会休眠，冷启动 30–60 秒。**这不影响对话**（对话在前端）。
 
+## 2.5 手机端怎么拿最新版本（扫一次就够）
+
+```
+永久下载地址（每次发版覆盖同一个文件 ⇒ 二维码永远不变、永远是最新版）
+https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk
+
+版本清单（App 读它判断有没有新版）
+https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/latest.json
+
+下载页（给人看的）
+https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/index.html
+```
+
+* 桌面的 `扫码下载APK.png` 就是上面第一条 → **扫一次，以后每次发新版都不用重扫**。
+* 已装的 App 每次启动会读 `latest.json`，有新版就在顶部显示「有新版 vX.X.X · 下载新版」。
+* 发新版只要做一件事：把新 APK 覆盖成 `downloads/aura-companion.apk` 并推送（`python tools/publish_via_git.py 1.0.2`）。
+
+---
+
 ## 3. 桌面 App（Electron）
 
 ```bash
