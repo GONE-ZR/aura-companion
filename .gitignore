@@ -50,3 +50,5 @@ tests/_tts_sample.mp3
 tools/_*.py
 tools/_*.js
 tools/cdp.js
+_srv.log
+_srv.err
