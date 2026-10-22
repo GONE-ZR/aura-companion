@@ -39,11 +39,31 @@
 
   /* ---------------- 拉取 ---------------- */
   function fetchOne(u) {
-    return fetch(u, { cache: "no-store" })
-      .then(function (r) {
-        if (!r.ok) throw new Error("http " + r.status);
-        return r.json();
-      });
+    /* 每个源最多等 6 秒 —— 被墙的源不许把整个轮询拖死
+       （本机实测：raw / jsDelivr 会被重置，没超时的话界面要等好几分钟） */
+    return new Promise(function (resolve, reject) {
+      var ctl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var done = false;
+      var timer = setTimeout(function () {
+        if (done) return;
+        done = true;
+        try { if (ctl) ctl.abort(); } catch (e) { }
+        reject(new Error("timeout-6s"));
+      }, 6000);
+      fetch(u, ctl ? { cache: "no-store", signal: ctl.signal } : { cache: "no-store" })
+        .then(function (r) {
+          if (!r.ok) throw new Error("http " + r.status);
+          return r.json();
+        })
+        .then(function (j) {
+          if (done) return;
+          done = true; clearTimeout(timer); resolve(j);
+        })
+        .catch(function (e) {
+          if (done) return;
+          done = true; clearTimeout(timer); reject(e);
+        });
+    });
   }
 
   /* 版本号：新 schema 用 configVersion，旧 schema 用 version —— 统一取大的那个 */

@@ -1,9 +1,9 @@
 {
-  "version": "1.0.15",
+  "version": "1.0.16",
   "published": "2026-10-23",
   "apk": "aura-companion.apk",
   "url": "https://raw.githubusercontent.com/GONE-ZR/aura-companion/main/downloads/aura-companion.apk",
-  "size": 4759608,
-  "sha256": "3e18e045e2133e922605865b8be73a05dfacf48eb4d770b464efc6ad317e883e",
+  "size": 4759895,
+  "sha256": "caf973d88cfc3cfae5c913eb072f3a938424781bbddcc77f7ff86767e2d0d647",
   "notes": "后台管理页（外观 / 功能开关 / 文案 / 快捷短语 / 图标 / 危险操作，改完手机 30 秒内生效） · 配置更新地址可自定义 · 修复主题色被情绪配色覆盖"
 }
