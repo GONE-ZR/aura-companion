@@ -65,7 +65,10 @@
     try { localStorage.setItem(k, v); return true; } catch (e) { return false; }
   }
   function rawDel(k) {
-    try { localStorage.removeItem(k); return true; } catch (e) { return false; }
+    try { localStorage.removeItem(k); } catch (e) { return false; }
+    /* 镜像同步删：否则下次 hydrate 会把刚删掉的键写回来 */
+    try { if (window.AuraDB && window.AuraDB.forget) window.AuraDB.forget(k); } catch (e) { }
+    return true;
   }
   function getJSON(k, fallback) {
     var s = rawGet(k);

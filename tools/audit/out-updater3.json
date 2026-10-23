@@ -1,0 +1,24 @@
+{
+ "f2": {
+  "logs": [
+   "console.error:[cfg] 版本字段冲突：配置里同时存在 configVersion 与 version，已拒绝应用该配置"
+  ],
+  "applied": {
+   "at": 1792737555152,
+   "ver": 31,
+   "hasCopy": true
+  },
+  "textEmpty": "我在。"
+ },
+ "f9": {
+  "apkRequests": 1,
+  "states": "downloading"
+ },
+ "f3": {
+  "savedVersion": 32,
+  "appVersion": 31,
+  "appliedText": "我在。",
+  "marker": "重启校验-561055",
+  "ok": false
+ }
+}

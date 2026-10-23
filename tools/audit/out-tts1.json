@@ -1,0 +1,31 @@
+{
+ "v1": {
+  "locked": "zh-CN-XiaoyiNeural",
+  "build": "1.0.21"
+ },
+ "v13": {
+  "fallback": "",
+  "noteExists": true,
+  "noteHidden": true
+ },
+ "params": {
+  "voice": "zh-CN-XiaoyiNeural",
+  "rate": "-5%",
+  "pitch": "+0Hz",
+  "volume": "+0%"
+ },
+ "voiceSame": {
+  "calm": "zh-CN-XiaoyiNeural",
+  "happy": "zh-CN-XiaoyiNeural",
+  "sad": "zh-CN-XiaoyiNeural",
+  "angry": "zh-CN-XiaoyiNeural",
+  "low": "zh-CN-XiaoyiNeural",
+  "stifled": "zh-CN-XiaoyiNeural",
+  "jealous": "zh-CN-XiaoyiNeural",
+  "curious": "zh-CN-XiaoyiNeural"
+ },
+ "u10_web": {
+  "hasSkip": true,
+  "text": "先跳过，直接进主界面"
+ }
+}

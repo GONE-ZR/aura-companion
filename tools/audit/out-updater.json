@@ -1,0 +1,72 @@
+{
+ "newer": {
+  "returned": true,
+  "state": {
+   "state": "idle",
+   "hasUpdate": true,
+   "latest": {
+    "version": "1.0.22",
+    "apk": "aura-companion.apk",
+    "url": "http://127.0.0.1:8000/remote/test-update.bin",
+    "date": "2026-10-23"
+   },
+   "inFlight": false,
+   "lastError": null,
+   "progress": 0
+  },
+  "barHidden": false,
+  "text": "有新版 v1.0.22",
+  "btn": "现在更新"
+ },
+ "occlusion": {
+  "same": true,
+  "topEl": "BUTTON#ub-update.ub-btn",
+  "rect": {
+   "x": 252,
+   "y": 707,
+   "w": 84,
+   "h": 30
+  },
+  "disabled": false
+ },
+ "doubleClick": {
+  "inFlight": false,
+  "state": "idle"
+ },
+ "afterClickLabel": {
+  "state": "idle",
+  "btn": "现在更新",
+  "disabled": false
+ },
+ "afterFail": {
+  "state": "idle",
+  "err": null,
+  "btn": "现在更新",
+  "barHidden": false,
+  "disabled": false
+ },
+ "same": {
+  "returned": false,
+  "state": {
+   "state": "idle",
+   "hasUpdate": false,
+   "latest": null,
+   "inFlight": false,
+   "lastError": null,
+   "progress": 0
+  },
+  "barHidden": true
+ },
+ "badSource": {
+  "state": "idle",
+  "err": null,
+  "btn": "现在更新",
+  "barHidden": true
+ },
+ "offline": {
+  "ms": 200,
+  "state": "idle",
+  "err": null,
+  "btn": "现在更新"
+ }
+}

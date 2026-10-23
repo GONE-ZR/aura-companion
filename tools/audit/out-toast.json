@@ -1,0 +1,22 @@
+{
+ "light": {
+  "night": "0",
+  "color": "rgb(42, 42, 42)",
+  "background": "rgb(253, 251, 244)",
+  "fontSize": "15px",
+  "lineHeight": "22.5px",
+  "ratio": 13.86,
+  "border": "0px",
+  "radius": "10px"
+ },
+ "dark": {
+  "night": "1",
+  "color": "rgb(42, 42, 42)",
+  "background": "rgb(253, 251, 244)",
+  "fontSize": "15px",
+  "lineHeight": "22.5px",
+  "ratio": 13.86,
+  "border": "0px",
+  "radius": "10px"
+ }
+}

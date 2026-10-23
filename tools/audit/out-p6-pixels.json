@@ -1,0 +1,68 @@
+{
+ "light": {
+  "size": [
+   1560,
+   240
+  ],
+  "bbox_px": [
+   4,
+   0,
+   1555,
+   15
+  ],
+  "bbox_css": [
+   1,
+   0,
+   388,
+   3
+  ],
+  "max_bbox_y_css": 3,
+  "topbar_diff_px": 0,
+  "whitegap_diff_px": 0,
+  "after_vs_static_px": 0,
+  "after_vs_static_bbox": null,
+  "eight_state_diff": {
+   "smile": 0,
+   "calm": 0,
+   "low": 0,
+   "tired": 0,
+   "blank": 0,
+   "sulky": 0,
+   "serious": 0
+  },
+  "eight_state_max_diff": 0
+ },
+ "dark": {
+  "size": [
+   1560,
+   240
+  ],
+  "bbox_px": [
+   4,
+   0,
+   1555,
+   15
+  ],
+  "bbox_css": [
+   1,
+   0,
+   388,
+   3
+  ],
+  "max_bbox_y_css": 3,
+  "topbar_diff_px": 0,
+  "whitegap_diff_px": 0,
+  "after_vs_static_px": 0,
+  "after_vs_static_bbox": null,
+  "eight_state_diff": {
+   "smile": 0,
+   "calm": 0,
+   "low": 0,
+   "tired": 0,
+   "blank": 0,
+   "sulky": 0,
+   "serious": 0
+  },
+  "eight_state_max_diff": 0
+ }
+}

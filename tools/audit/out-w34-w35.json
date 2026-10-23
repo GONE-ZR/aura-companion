@@ -1,0 +1,13 @@
+{
+ "w34": {
+  "typeofState": "undefined",
+  "bareCall": "ReferenceError: state is not defined",
+  "keys": "H,DUR,init,resize,maybe,drawStatic,sync,waveHideForCapture,waveRestoreAfterCapture"
+ },
+ "w35": {
+  "withSafe": "block",
+  "back": "block",
+  "withPlain": "none",
+  "back2": "block"
+ }
+}

@@ -264,11 +264,22 @@
     var list = readSessionsRaw();
     var kept = list.filter(function (s) { return s.id !== sid; });
     if (kept.length !== list.length) writeSessionsRaw(kept);
+    var key = MSG_PREFIX + sid;
     try {
       var st = S();
-      if (st) st.del(MSG_PREFIX + sid);
+      if (st) st.del(key);
     } catch (e) { /* 删不掉就留着，至少会话已经不可见了 */ }
-    return kept.length !== list.length;
+    /* 真相源在 IndexedDB：先等队列里的镜像写完，再物理删掉；
+       否则排队中的写会把刚删的消息又插回去（BUG-002）。 */
+    if (typeof window !== "undefined" && window.AuraDB && window.AuraDB.deleteSession) {
+      var db = window.AuraDB;
+      return Promise.resolve()
+        .then(function () { return db.flush ? db.flush() : null; })
+        .then(function () { return db.deleteSession(sid); })
+        .then(function () { return true; })
+        .catch(function () { return true; });
+    }
+    return Promise.resolve(true);   /* 没有 IDB 的环境（老浏览器）保持原行为 */
   }
 
   /* ---------------- 回收站视图（**只有名字与时间**） ----------------

@@ -341,7 +341,7 @@ document.querySelectorAll("#nav button").forEach(b=>{
 async function bootCore(){
   const st = await api("/admin/api/status");
   document.getElementById("status").innerHTML =
-    "配置版本 v" + (st.version||0) + "<br>更新于 " + (st.updated_at||"—") +
+    "配置版本 v" + (st.configVersion||0) + "<br>更新于 " + (st.updated_at||"—") +
     "<br>GitHub 推送：" + (st.has_github_token ? "可用 ✅" : "无令牌（只存本地）") +
     (st.admin_password_is_default ? "<br>⚠️ 密码还是默认值" : "");
 
@@ -485,7 +485,7 @@ document.getElementById("btn-save").onclick = async ()=>{
   collect();
   const r = await api("/admin/api/config", {config: cfg});
   if (r.ok){
-    toast("已保存并下发（v" + r.config.version + "）" +
+    toast("已保存并下发（v" + r.config.configVersion + "）" +
           (r.pushed && r.pushed.ok ? " · 已推到 GitHub，手机 30 秒内生效 ✅" : " · 只存本地（" + ((r.pushed&&r.pushed.reason)||"未推送") + "）"), true);
     cfg = r.config;
     boot();
@@ -558,7 +558,7 @@ function refreshKpis() {
     if (tz2 && window.AuraTime) tz2.textContent = "本地 " + window.AuraTime.tzLabel();
   } catch (e) { }
   api("/admin/api/status").then(function (st) {
-    setText("kpi-ver", "v" + (st.version || 0));
+    setText("kpi-ver", "v" + (st.configVersion || 0));
     /* §1.3：时间到秒 + 本地时区（原来 replace("T"/"Z") 是错的：
        它把 UTC 直接当本地显示，还把秒和前半小时砍掉了） */
     var raw = st.updated_at || "";

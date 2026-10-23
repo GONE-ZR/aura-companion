@@ -203,9 +203,11 @@
         del.style.cssText = "font-size:12px;padding:5px 10px";
         del.onclick = function () {
           if (!window.confirm("这个会话的 " + n + " 条消息会被永久删除，无法恢复。确定？")) return;
-          window.AuraRecords.hardDeleteSession(it.id);
-          row.remove();
-          toast("已彻底删除");
+          /* 等 IndexedDB 也删完再移除这一行，避免出现“看着删了、重开又回来” */
+          Promise.resolve(window.AuraRecords.hardDeleteSession(it.id)).then(function () {
+            row.remove();
+            toast("已彻底删除");
+          });
         };
 
         row.appendChild(name);

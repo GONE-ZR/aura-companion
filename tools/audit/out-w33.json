@@ -1,0 +1,65 @@
+{
+ "trigger": {
+  "fired": true,
+  "amp": 3,
+  "drawnAmp": 1.88,
+  "peaks": 2,
+  "color": "#D96761",
+  "alpha": 0.7
+ },
+ "canvas": {
+  "w": 780,
+  "h": 8
+ },
+ "rows": [
+  {
+   "y": 0,
+   "nonEmpty": 15,
+   "saturated": 0,
+   "maxAlpha": 45
+  },
+  {
+   "y": 1,
+   "nonEmpty": 129,
+   "saturated": 0,
+   "maxAlpha": 178
+  },
+  {
+   "y": 2,
+   "nonEmpty": 387,
+   "saturated": 0,
+   "maxAlpha": 178
+  },
+  {
+   "y": 3,
+   "nonEmpty": 778,
+   "saturated": 0,
+   "maxAlpha": 178
+  },
+  {
+   "y": 4,
+   "nonEmpty": 761,
+   "saturated": 0,
+   "maxAlpha": 178
+  },
+  {
+   "y": 5,
+   "nonEmpty": 643,
+   "saturated": 0,
+   "maxAlpha": 178
+  },
+  {
+   "y": 6,
+   "nonEmpty": 354,
+   "saturated": 0,
+   "maxAlpha": 178
+  },
+  {
+   "y": 7,
+   "nonEmpty": 0,
+   "saturated": 0,
+   "maxAlpha": 0
+  }
+ ],
+ "topRowSaturatedRun": 0
+}

@@ -64,8 +64,12 @@ def read_config():
 
 def write_config(cfg):
     REMOTE_DIR.mkdir(parents=True, exist_ok=True)
-    cfg["version"] = int(read_config().get("version", 0)) + 1
+    # 单一版本源：configVersion（App 的 verOf 优先读它）。
+    # 旧字段 version 只做删除，不再写入 —— 两个字段各写各的会导致“保存了但 App 不生效”。
+    cfg.pop("version", None)
+    cfg["configVersion"] = int(read_config().get("configVersion", 0) or 0) + 1
     cfg["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    cfg.pop("updatedAt", None)          # 时间同样只留一个字段
     CONFIG_FILE.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
     return cfg
 
@@ -138,8 +142,8 @@ def register(app):
         if not isinstance(cfg, dict):
             return jsonify({"error": "配置格式不对"}), 400
         saved = write_config(cfg)
-        pushed = push_to_github()
-        return jsonify({"ok": True, "config": saved, "pushed": pushed})
+        # 保存只写本地磁盘：不再自动 git add / commit / push（配置已移出版本库）
+        return jsonify({"ok": True, "config": saved, "pushed": {"ok": False, "reason": "auto-push disabled"}})
 
     @app.post("/admin/api/save-secret")
     def admin_save_secret():
@@ -192,7 +196,7 @@ def register(app):
     def admin_status():
         cfg = read_config()
         return jsonify({
-            "version": cfg.get("version"),
+            "configVersion": cfg.get("configVersion"),
             "updated_at": cfg.get("updated_at"),
             "config_exists": CONFIG_FILE.exists(),
             "has_github_token": bool(github_token()),

@@ -1,0 +1,23 @@
+{
+ "origin": "http://127.0.0.1:8000",
+ "isSecureContext": true,
+ "getUserMedia": "function",
+ "onboardingShown": true,
+ "skipExists": true,
+ "checkboxFlow": {
+  "before": true,
+  "afterClick": {
+   "checked": true,
+   "disabled": false
+  }
+ },
+ "afterSkip": {
+  "onboardingGone": true,
+  "flag": "1",
+  "decl": true,
+  "logVisible": true
+ },
+ "toast": {
+  "__err": "Uncaught"
+ }
+}

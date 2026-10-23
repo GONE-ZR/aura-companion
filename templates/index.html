@@ -178,6 +178,7 @@
     <div class="drawer-item" style="--i:0">
       <label class="row" for="in-voice-base"><span>基准音色</span></label>
       <select id="in-voice-base" class="txt"></select>
+      <p class="hint" id="voice-fallback-note" hidden></p>
     </div>
     <div class="drawer-item" style="--i:1">
       <label class="row" for="in-voice-rate"><span>语速 <b id="val-rate">0.95</b></span></label>
@@ -325,6 +326,10 @@
       <button id="btn-review" class="btn">回顾</button>
       <button id="btn-check-update" class="btn">检查更新</button>
     </div>
+    <div class="drawer-item" style="--i:3" id="in-wave-row">
+      <label class="row" for="in-wave"><span>她藏不住的时候</span></label>
+      <button id="in-wave" class="switch" role="switch" aria-checked="true" aria-label="她藏不住的时候"><i></i></button>
+    </div>
   </div>
 </aside>
 
@@ -422,6 +427,7 @@
 <script src="/static/js/voice.js"></script>
 <script src="/static/js/wallpaper.js"></script>
 <script src="/static/js/weather.js"></script>
+<script src="/static/js/wave.js"></script>
 <script src="/static/js/app.js"></script>
 </body>
 </html>

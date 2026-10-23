@@ -127,6 +127,12 @@
         btn.addEventListener("click", function () { step = 1; render(); });
         box.appendChild(btn);
         box.appendChild(el("div", "font-size:12px;color:var(--dim,#6b665d);text-align:center", "这四屏随时可以在设置里重新查看"));
+
+        /* 先看看：不勾选也能直接进主界面（声明之后可在设置里回看） */
+        var skip = el("button", "margin:2px auto 0;background:none;border:0;padding:8px 12px;cursor:pointer;" +
+          "font-family:inherit;font-size:13px;color:var(--dim,#6b665d);text-decoration:underline", "先跳过，直接进主界面");
+        skip.addEventListener("click", function () { finish(data); });
+        box.appendChild(skip);
       }
 
       /* 第五篇 §8：她先开口说三句（不含提问），用户可以直接打字进对话 */

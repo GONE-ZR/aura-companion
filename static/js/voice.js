@@ -103,7 +103,13 @@
   function vcfg() {
     var c = (A.cfg && A.cfg.voice) ? A.cfg.voice : null;
     if (!c) {
-      c = { base: "zh-CN-XiaoxiaoNeural", rate: 0.95, vol: 1, rateTouched: false, auto: true, map: null };
+      c = { base: LOCKED_VOICE, rate: 0.95, vol: 1, rateTouched: false, auto: true, map: null };
+    }
+    /* 旧默认（晓晓）迁移到 B 方案锁定音色；用户自己选过的别的音色保持不动 */
+    if (c.base === "zh-CN-XiaoxiaoNeural") {
+      c.base = LOCKED_VOICE;
+      if (A.cfg && A.cfg.voice) A.cfg.voice.base = LOCKED_VOICE;
+      saveVoice({ base: LOCKED_VOICE });
     }
     return c;
   }
@@ -141,9 +147,14 @@
     return out;
   }
   function isValidVoice(id) { return !!voiceIds()[id]; }
+  /* 音色 B（锁定）：全项目唯一一处定义。
+     任何情绪都不换 speaker —— 换 speaker 就等于换人。 */
+  var LOCKED_VOICE = "zh-CN-XiaoyiNeural";
+  var BUILD_TAG = "1.0.21";        /* 进缓存键：改参数后必须换 key */
+
   function baseVoice() {
     var b = vcfg().base;
-    return isValidVoice(b) ? b : "zh-CN-XiaoxiaoNeural";
+    return isValidVoice(b) ? b : LOCKED_VOICE;
   }
   /* 情绪偏移（平静档一律为 0） */
   function offsetsOf(em) {
@@ -170,19 +181,9 @@
     return m ? parseFloat(m[1]) : 0;
   }
 
-  /* 音色：开关关 → 全用基准；开关开 → 查表；表里失效音色回落基准并提示一次 */
-  function resolveVoice(em) {
-    var cfg = vcfg();
-    var base = baseVoice();
-    if (!cfg.auto) return base;
-    var map = cfg.map || {};
-    var v = map[em] || (A.DEFAULT_VOICE_MAP ? A.DEFAULT_VOICE_MAP[em] : "");
-    if (!v || v === "__base__") return base;
-    if (!isValidVoice(v)) {
-      noteBadVoice(v);
-      return base;
-    }
-    return v;
+  /* 音色：单音色（B 方案）。情绪只调 rate/pitch，不换 speaker。 */
+  function resolveVoice() {
+    return baseVoice();
   }
   function noteBadVoice(v) {
     var key = "voice:" + v;
@@ -353,7 +354,9 @@
     return h.toString(36);
   }
   function cacheKey(text, params) {
-    return hashKey([params.voice, params.rate, params.pitch, params.volume, text].join("|"));
+    /* voiceId 与构建版本都必须进键：
+       换音色 / 改参数后如果键不变，会播回旧音频。 */
+    return hashKey([params.voice || "", BUILD_TAG, params.rate, params.pitch, params.volume, text].join("|"));
   }
   function clearCache() {
     for (var k in cache) {
@@ -695,27 +698,49 @@
   }
 
   function playSegment(text, params, em) {
-    /* APK：优先原生系统 TTS（离线、零延迟、有中文女声） */
-    if (nativeTtsPlugin()) {
-      return nativeSpeak(text, params).catch(function (err) {
-        if (window.speechSynthesis) {
-          return speakViaSynthesis(text, params, em).catch(function () { throw err; });
-        }
-        throw err;
-      });
-    }
+    /* 主路径：在线合成（同一个 voiceId，三端同一个人）。
+       失败才逐级回落：原生 TTS → speechSynthesis，并记录“现在是系统语音”。 */
     return ensureAudio(text, params).then(function (res) {
-      if (res && res.done) return true;
+      if (res && res.done) { noteFallback(""); return true; }
       if (!res || !res.url) throw new Error("no audio");
-      return playUrl(res.url);
+      return playUrl(res.url).then(function (ok) { noteFallback(""); return ok; });
     }).catch(function (err) {
-      /* Electron / 直连模式 回落 speechSynthesis；其它形态直接失败 */
-      if ((isElectron() || (window.Aura && window.Aura.cfg && window.Aura.cfg.mode === "direct"))
-          && window.speechSynthesis) {
-        return speakViaSynthesis(text, params, em).catch(function () { throw err; });
+      if (nativeTtsPlugin()) {
+        return nativeSpeak(text, params).then(function (ok) {
+          noteFallback("native");          /* 安卓系统语音：音色不保证 */
+          return ok;
+        }).catch(function () {
+          if (window.speechSynthesis) {
+            return speakViaSynthesis(text, params, em).then(function (ok) {
+              noteFallback("system");
+              return ok;
+            });
+          }
+          throw err;
+        });
+      }
+      if (window.speechSynthesis) {
+        return speakViaSynthesis(text, params, em).then(function (ok) {
+          noteFallback("system");
+          return ok;
+        });
       }
       throw err;
     });
+  }
+
+  /* 回落标记：只给设置页显示“当前为系统语音，音色不保证”，不参与任何判断 */
+  var fallbackKind = "";
+  function noteFallback(kind) {
+    if (fallbackKind === (kind || "")) return;
+    fallbackKind = kind || "";
+    try {
+      var note = document.getElementById("voice-fallback-note");
+      if (note) {
+        note.hidden = !fallbackKind;
+        note.textContent = fallbackKind ? "当前为系统语音，音色不保证（在线合成不可用）" : "";
+      }
+    } catch (e) { /* ignore */ }
   }
 
   function speakInternal(text, em, forceVoice) {
@@ -1434,6 +1459,10 @@
     clearCache: clearCache,
     openSelfCheck: openSelfCheck,
     isElectron: isElectron,
-    currentEmotion: function () { return curEmotion; }
+    currentEmotion: function () { return curEmotion; },
+    /* 当前是否走了系统语音兜底（"" = 在线合成正常） */
+    fallbackState: function () { return fallbackKind || ""; },
+    lockedVoice: function () { return LOCKED_VOICE; },
+    buildTag: function () { return BUILD_TAG; }
   };
 })();

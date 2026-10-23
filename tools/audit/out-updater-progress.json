@@ -1,0 +1,86 @@
+[
+ {
+  "state": "downloading",
+  "p": 0,
+  "btn": "下载中 0%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 1,
+  "btn": "下载中 1%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 3,
+  "btn": "下载中 3%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 5,
+  "btn": "下载中 5%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 6,
+  "btn": "下载中 6%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 8,
+  "btn": "下载中 8%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 10,
+  "btn": "下载中 10%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 12,
+  "btn": "下载中 12%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 13,
+  "btn": "下载中 13%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 15,
+  "btn": "下载中 15%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 17,
+  "btn": "下载中 17%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ },
+ {
+  "state": "downloading",
+  "p": 18,
+  "btn": "下载中 18%",
+  "txt": "正在下载新版 v1.0.22",
+  "barHidden": false
+ }
+]

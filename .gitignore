@@ -52,3 +52,16 @@ tools/_*.js
 tools/cdp.js
 _srv.log
 _srv.err
+# 更新模块的临时测试文件（remote/ 会被后台自动推送，别把测试件带进去）
+remote/*-test.json
+remote/*-same.json
+remote/*.bin
+remote/config-conflict.json
+_srv*.log
+_srv*.err
+# 配置不进任何版本库（本地维护；发布只发 manifest.json + resources/）
+remote/config.json
+remote/*-test.json
+remote/*.same.json
+remote/*.bin
+*.local.json

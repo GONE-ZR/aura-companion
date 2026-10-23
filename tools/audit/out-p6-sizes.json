@@ -1,0 +1,50 @@
+{
+ "360x800": {
+  "canvas": {
+   "x": 0,
+   "y": 0,
+   "w": 360,
+   "h": 2
+  },
+  "topbar": {
+   "y": 0,
+   "h": 52
+  },
+  "firstTopbarText": 3.7,
+  "overlapText": false,
+  "overflowX": 0,
+  "safeTop": "env=0"
+ },
+ "390x844": {
+  "canvas": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 2
+  },
+  "topbar": {
+   "y": 0,
+   "h": 52
+  },
+  "firstTopbarText": 3.7,
+  "overlapText": false,
+  "overflowX": 0,
+  "safeTop": "env=0"
+ },
+ "430x932": {
+  "canvas": {
+   "x": 0,
+   "y": 0,
+   "w": 430,
+   "h": 2
+  },
+  "topbar": {
+   "y": 0,
+   "h": 52
+  },
+  "firstTopbarText": 3.7,
+  "overlapText": false,
+  "overflowX": 0,
+  "safeTop": "env=0"
+ }
+}

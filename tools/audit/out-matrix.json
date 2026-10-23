@@ -1,0 +1,114 @@
+{
+ "v1.0.7": {
+  "patienceUI": {
+   "hasWord": false,
+   "has73": false
+  },
+  "font": {
+   "family": "\"Noto Serif SC\", \"Source Han Serif SC\", \"Songti SC\", STSong, SimSun, Georgia, \"Times New Roman\", serif",
+   "size": "15px"
+  },
+  "contrast": {
+   "ratio": 16.89,
+   "color": "rgb(236, 230, 218)",
+   "bg": "color(srgb 0.105882 0.0980392 0.0862745 / 0.84)"
+  },
+  "empty": {
+   "deleted": 2,
+   "threw": null,
+   "errs": []
+  },
+  "hard": {
+   "noApi": true
+  },
+  "nokey": {
+   "gate": false,
+   "reqs": 0,
+   "modelReqs": 0
+  }
+ },
+ "v1.0.10": {
+  "patienceUI": {
+   "hasWord": false,
+   "has73": false
+  },
+  "font": {
+   "family": "\"Noto Serif SC\", \"Source Han Serif SC\", \"Songti SC\", STSong, SimSun, Georgia, \"Times New Roman\", serif",
+   "size": "15px"
+  },
+  "contrast": {
+   "ratio": 16.89,
+   "color": "rgb(236, 230, 218)",
+   "bg": "color(srgb 0.105882 0.0980392 0.0862745 / 0.84)"
+  },
+  "empty": {
+   "deleted": 2,
+   "threw": null,
+   "errs": []
+  },
+  "hard": {
+   "noApi": true
+  },
+  "nokey": {
+   "gate": false,
+   "reqs": 0,
+   "modelReqs": 0
+  }
+ },
+ "v1.0.13": {
+  "patienceUI": {
+   "hasWord": false,
+   "has73": false
+  },
+  "font": {
+   "family": "\"Noto Serif SC\", \"Source Han Serif SC\", \"Songti SC\", STSong, SimSun, Georgia, \"Times New Roman\", serif",
+   "size": "15px"
+  },
+  "contrast": {
+   "ratio": 16.89,
+   "color": "rgb(236, 230, 218)",
+   "bg": "color(srgb 0.105882 0.0980392 0.0862745 / 0.84)"
+  },
+  "empty": {
+   "deleted": 2,
+   "threw": null,
+   "errs": []
+  },
+  "hard": {
+   "noApi": true
+  },
+  "nokey": {
+   "gate": false,
+   "reqs": 0,
+   "modelReqs": 0
+  }
+ },
+ "v1.0.16": {
+  "patienceUI": {
+   "hasWord": false,
+   "has73": false
+  },
+  "font": {
+   "family": "\"Smiley Sans\", -apple-system, \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+   "size": "16.5px"
+  },
+  "contrast": {
+   "ratio": 13.86,
+   "color": "rgb(42, 42, 42)",
+   "bg": "rgb(253, 251, 244)"
+  },
+  "empty": {
+   "deleted": 2,
+   "threw": null,
+   "errs": []
+  },
+  "hard": {
+   "noApi": true
+  },
+  "nokey": {
+   "gate": false,
+   "reqs": 0,
+   "modelReqs": 0
+  }
+ }
+}

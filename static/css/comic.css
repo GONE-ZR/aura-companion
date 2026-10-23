@@ -31,6 +31,15 @@ body.comic {
   --bg-dusk: #FBE8D3;
   --bg-cool: #E9EEF2;
   --bg-gray: #E4E6E8;
+  /* 漫画模式必须自带完整的一套表面色：
+     否则弹层/抽屉会继承“深色主题”的 --surface（深底）+ 漫画的 --text（深字）→ 黑底黑字 */
+  --bg: #FDF6E8;
+  --surface: #FDFBF4;
+  --surface-2: #F6F2E9;
+  --line: rgba(0, 0, 0, .14);
+  --text-dim: #6B665D;
+  --bubble-ai: #FFFFFF;
+  --bubble-me: #EFE7DA;
 
   background: var(--bg-warm);
   color: var(--text);
@@ -69,6 +78,13 @@ body.comic[data-night="1"] {
   --text: #E8E6E1;
   --muted: #A9A6A0;
   --paper: #34383E;
+  --bg: #2A2E33;
+  --surface: #34383E;
+  --surface-2: #3C4148;
+  --line: rgba(255, 255, 255, .18);
+  --text-dim: #A9A6A0;
+  --bubble-ai: #3A3F46;
+  --bubble-me: #474D55;
 }
 body.comic[data-night="1"]::before { filter: invert(1); opacity: .5; }
 

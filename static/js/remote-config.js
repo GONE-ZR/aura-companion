@@ -25,11 +25,10 @@
        ③ GitHub raw（电脑关机也能用的那条）
   */
   function urls() {
+    /* 配置只从**同一来源**读（自己这台机器 / APK 包内），不再从 GitHub 拉：
+       远程配置这条路已经关掉，避免“配置在公网裸奔 + 改了不生效”。 */
     var out = [];
-    var custom = A.store.getStr("aura_remote_cfg", "");
-    if (custom) out.push(custom);
     if (String(location.protocol).indexOf("http") === 0) out.push("/remote/config.json");
-    out.push(URL_PROXY, URL_PAGES, DEFAULT_URL);
     return out;
   }
 
@@ -66,10 +65,22 @@
     });
   }
 
-  /* 版本号：新 schema 用 configVersion，旧 schema 用 version —— 统一取大的那个 */
+  /* 版本号：唯一来源 = configVersion。
+     旧字段 version 只警告一次并忽略（不许因为一个冗余字段让整份配置不可用）。 */
+  var warnedLegacyVersion = false;
+  function assertSingleVersion(cfg) {
+    if (!cfg) return true;
+    if (!warnedLegacyVersion && Object.prototype.hasOwnProperty.call(cfg, "version")) {
+      warnedLegacyVersion = true;
+      console.warn("[cfg] 配置里还有冗余字段 version，已忽略（只认 configVersion）");
+    }
+    return true;
+  }
+
   function verOf(cfg) {
     if (!cfg) return 0;
-    return Number(cfg.configVersion || cfg.version || 0);
+    assertSingleVersion(cfg);
+    return Number(cfg.configVersion || 0);
   }
 
   /* 依次尝试多个源，取版本号最高的那个 */
@@ -98,7 +109,7 @@
     try {
       window.__cfgApplied = {
         at: Date.now(),
-        ver: Number(c.configVersion || c.version || 0),
+        ver: Number(c.configVersion || 0),
         hasCopy: !!(c.copy && c.copy.inputPlaceholder)
       };
     } catch (e) { }
@@ -112,14 +123,14 @@
           var inp = document.getElementById("input");
           if (inp) inp.placeholder = c.copy.inputPlaceholder;
         });
-        safe(function () { A.store.setStr("aura_text_placeholder", c.copy.inputPlaceholder); });
+        safe(function () { /* 文案是代码，不落盘（§1.5） */ });
       }
       if (c.copy.emptyState) {
         safe(function () {
           var em = document.querySelector(".empty-text");
           if (em) em.textContent = c.copy.emptyState;
         });
-        safe(function () { A.store.setStr("aura_text_empty", c.copy.emptyState); });
+        safe(function () { /* 文案是代码，不落盘（§1.5） */ });
       }
     }
     /* 背景 */
@@ -245,13 +256,12 @@
 
   function applyText(t) {
     if (!t) return;
+    /* 文案是代码，不写 localStorage / IndexedDB（§1.5） */
     if (t.empty) {
-      A.store.setStr("aura_text_empty", t.empty);
       var empty = document.querySelector(".empty-text");
       if (empty) empty.textContent = t.empty;
     }
     if (t.placeholder) {
-      A.store.setStr("aura_text_placeholder", t.placeholder);
       var input = document.getElementById("input");
       if (input) input.placeholder = t.placeholder;
     }
@@ -357,19 +367,11 @@
     });
   }
 
-  /* 上次拿到的文案先垫上（免得等第一次轮询） */
+  /* 旧版本曾把文案缓存进 localStorage —— 启动时清掉一次，之后不再写 */
   function applyCached() {
     try {
-      var p = A.store.getStr("aura_text_placeholder", "");
-      if (p) {
-        var i = document.getElementById("input");
-        if (i) i.placeholder = p;
-      }
-      var e = A.store.getStr("aura_text_empty", "");
-      if (e) {
-        var n = document.querySelector(".empty-text");
-        if (n) n.textContent = e;
-      }
+      A.store.del && A.store.del("aura_text_placeholder");
+      A.store.del && A.store.del("aura_text_empty");
     } catch (err) { /* ignore */ }
   }
 

@@ -1,0 +1,38 @@
+{
+ "light": {
+  "night": "0",
+  "modal": {
+   "bg": "rgb(253, 251, 244)",
+   "color": "rgb(42, 42, 42)",
+   "ratio": 13.86
+  },
+  "keygate": {
+   "bg": "rgba(0, 0, 0, 0)",
+   "color": "rgb(17, 17, 17)",
+   "ratio": 1.11
+  },
+  "drawer": {
+   "bg": "color(srgb 0.992157 0.984314 0.956863 / 0.92)",
+   "color": "rgb(42, 42, 42)",
+   "ratio": 3552209327.75
+  }
+ },
+ "dark": {
+  "night": "1",
+  "modal": {
+   "bg": "rgb(52, 56, 62)",
+   "color": "rgb(232, 230, 225)",
+   "ratio": 9.45
+  },
+  "keygate": {
+   "bg": "rgba(0, 0, 0, 0)",
+   "color": "rgb(17, 17, 17)",
+   "ratio": 1.11
+  },
+  "drawer": {
+   "bg": "color(srgb 0.203922 0.219608 0.243137 / 0.92)",
+   "color": "rgb(232, 230, 225)",
+   "ratio": 6925839.89
+  }
+ }
+}

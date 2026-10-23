@@ -1,0 +1,663 @@
+{
+ "hasKey": true,
+ "trig_light": {
+  "fired": true,
+  "amp": 3,
+  "drawnAmp": 1.88,
+  "peaks": 2,
+  "color": "#D96761",
+  "alpha": 0.7
+ },
+ "canvas_light": {
+  "maxA": 31,
+  "rows": [
+   0,
+   0,
+   0,
+   776,
+   776,
+   0,
+   0,
+   0
+  ],
+  "w": 780,
+  "h": 8,
+  "display": "block"
+ },
+ "trig_dark": {
+  "fired": true,
+  "amp": 3,
+  "drawnAmp": 1.88,
+  "peaks": 2,
+  "color": "#D96761",
+  "alpha": 0.7
+ },
+ "canvas_dark": {
+  "maxA": 31,
+  "rows": [
+   0,
+   0,
+   0,
+   776,
+   776,
+   0,
+   0,
+   0
+  ],
+  "w": 780,
+  "h": 8,
+  "display": "block"
+ },
+ "fps": {
+  "fps": 166,
+  "frames": 381
+ },
+ "amps": {
+  "rows": [
+   [
+    0,
+    1
+   ],
+   [
+    0.1,
+    1.2
+   ],
+   [
+    0.2,
+    1.4
+   ],
+   [
+    0.3,
+    1.6
+   ],
+   [
+    0.4,
+    1.8
+   ],
+   [
+    0.5,
+    2
+   ],
+   [
+    0.6,
+    2.2
+   ],
+   [
+    0.8,
+    2.6
+   ],
+   [
+    0.95,
+    2.9
+   ],
+   [
+    1,
+    3
+   ]
+  ],
+  "conceal": 3,
+  "max": 3
+ },
+ "de": {
+  "light": {
+   "intra": 21.6,
+   "inter": 33.5,
+   "worst": [
+    "sulky",
+    "serious"
+   ]
+  },
+  "dark": {
+   "intra": 14.3,
+   "inter": 32.1,
+   "worst": [
+    "soft",
+    "smile"
+   ]
+  }
+ },
+ "contrast": {
+  "light": {
+   "worst": 2.29,
+   "worstAt": [
+    "soft",
+    "gray"
+   ],
+   "rows": [
+    [
+     "soft",
+     "warm",
+     0.95,
+     2.65
+    ],
+    [
+     "soft",
+     "dusk",
+     0.95,
+     2.39
+    ],
+    [
+     "soft",
+     "cool",
+     0.95,
+     2.45
+    ],
+    [
+     "soft",
+     "gray",
+     0.95,
+     2.29
+    ],
+    [
+     "smile",
+     "warm",
+     0.95,
+     3.31
+    ],
+    [
+     "smile",
+     "dusk",
+     0.95,
+     3.01
+    ],
+    [
+     "smile",
+     "cool",
+     0.95,
+     3.09
+    ],
+    [
+     "smile",
+     "gray",
+     0.95,
+     2.88
+    ],
+    [
+     "calm",
+     "warm",
+     0.95,
+     14.26
+    ],
+    [
+     "calm",
+     "dusk",
+     0.95,
+     12.98
+    ],
+    [
+     "calm",
+     "cool",
+     0.95,
+     13.16
+    ],
+    [
+     "calm",
+     "gray",
+     0.95,
+     12.41
+    ],
+    [
+     "low",
+     "warm",
+     0.95,
+     4.59
+    ],
+    [
+     "low",
+     "dusk",
+     0.95,
+     4.19
+    ],
+    [
+     "low",
+     "cool",
+     0.95,
+     4.24
+    ],
+    [
+     "low",
+     "gray",
+     0.95,
+     4
+    ],
+    [
+     "tired",
+     "warm",
+     0.95,
+     3.43
+    ],
+    [
+     "tired",
+     "dusk",
+     0.95,
+     3.12
+    ],
+    [
+     "tired",
+     "cool",
+     0.95,
+     3.16
+    ],
+    [
+     "tired",
+     "gray",
+     0.95,
+     2.98
+    ],
+    [
+     "blank",
+     "warm",
+     0.95,
+     4.08
+    ],
+    [
+     "blank",
+     "dusk",
+     0.95,
+     3.72
+    ],
+    [
+     "blank",
+     "cool",
+     0.95,
+     3.81
+    ],
+    [
+     "blank",
+     "gray",
+     0.95,
+     3.56
+    ],
+    [
+     "sulky",
+     "warm",
+     0.95,
+     3.84
+    ],
+    [
+     "sulky",
+     "dusk",
+     0.95,
+     3.46
+    ],
+    [
+     "sulky",
+     "cool",
+     0.95,
+     3.55
+    ],
+    [
+     "sulky",
+     "gray",
+     0.95,
+     3.34
+    ],
+    [
+     "serious",
+     "warm",
+     0.95,
+     6.16
+    ],
+    [
+     "serious",
+     "dusk",
+     0.95,
+     5.59
+    ],
+    [
+     "serious",
+     "cool",
+     0.95,
+     5.71
+    ],
+    [
+     "serious",
+     "gray",
+     0.95,
+     5.36
+    ]
+   ]
+  },
+  "dark": {
+   "worst": 2.21,
+   "worstAt": [
+    "serious",
+    "dusk"
+   ],
+   "rows": [
+    [
+     "soft",
+     "warm",
+     0.7,
+     3.82
+    ],
+    [
+     "soft",
+     "dusk",
+     0.7,
+     3.87
+    ],
+    [
+     "soft",
+     "cool",
+     0.7,
+     3.93
+    ],
+    [
+     "soft",
+     "gray",
+     0.7,
+     3.9
+    ],
+    [
+     "smile",
+     "warm",
+     0.7,
+     3.62
+    ],
+    [
+     "smile",
+     "dusk",
+     0.7,
+     3.64
+    ],
+    [
+     "smile",
+     "cool",
+     0.7,
+     3.74
+    ],
+    [
+     "smile",
+     "gray",
+     0.7,
+     3.68
+    ],
+    [
+     "calm",
+     "warm",
+     0.7,
+     6.58
+    ],
+    [
+     "calm",
+     "dusk",
+     0.7,
+     6.58
+    ],
+    [
+     "calm",
+     "cool",
+     0.7,
+     6.8
+    ],
+    [
+     "calm",
+     "gray",
+     0.7,
+     6.67
+    ],
+    [
+     "low",
+     "warm",
+     0.7,
+     3.3
+    ],
+    [
+     "low",
+     "dusk",
+     0.7,
+     3.32
+    ],
+    [
+     "low",
+     "cool",
+     0.7,
+     3.43
+    ],
+    [
+     "low",
+     "gray",
+     0.7,
+     3.36
+    ],
+    [
+     "tired",
+     "warm",
+     0.7,
+     3.05
+    ],
+    [
+     "tired",
+     "dusk",
+     0.7,
+     3.04
+    ],
+    [
+     "tired",
+     "cool",
+     0.7,
+     3.14
+    ],
+    [
+     "tired",
+     "gray",
+     0.7,
+     3.08
+    ],
+    [
+     "blank",
+     "warm",
+     0.7,
+     2.82
+    ],
+    [
+     "blank",
+     "dusk",
+     0.7,
+     2.82
+    ],
+    [
+     "blank",
+     "cool",
+     0.7,
+     2.9
+    ],
+    [
+     "blank",
+     "gray",
+     0.7,
+     2.85
+    ],
+    [
+     "sulky",
+     "warm",
+     0.7,
+     2.62
+    ],
+    [
+     "sulky",
+     "dusk",
+     0.7,
+     2.65
+    ],
+    [
+     "sulky",
+     "cool",
+     0.7,
+     2.71
+    ],
+    [
+     "sulky",
+     "gray",
+     0.7,
+     2.67
+    ],
+    [
+     "serious",
+     "warm",
+     0.75,
+     2.33
+    ],
+    [
+     "serious",
+     "dusk",
+     0.7,
+     2.21
+    ],
+    [
+     "serious",
+     "cool",
+     0.7,
+     2.24
+    ],
+    [
+     "serious",
+     "gray",
+     0.7,
+     2.23
+    ]
+   ]
+  }
+ },
+ "w30_banner": {
+  "bannerOff": true,
+  "display": "none",
+  "wrapDisplay": "none",
+  "rafCalls": 0,
+  "fired": {
+   "fired": false,
+   "reason": "banner"
+  },
+  "logBefore": 0,
+  "logAfter": 0,
+  "bannerText": true
+ },
+ "w30_recover": {
+  "bannerOff": false,
+  "display": "block",
+  "fired": {
+   "fired": true,
+   "amp": 3,
+   "drawnAmp": 1.88,
+   "peaks": 2,
+   "color": "#B85C5C",
+   "alpha": 0.75
+  },
+  "logLen": 3,
+  "bannerStillThere": false
+ },
+ "w18": {
+  "hiddenDisplay": "none",
+  "hiddenMounted": false,
+  "shownDisplay": "block",
+  "staticMaxAlpha": 31,
+  "wrapCount": 1
+ },
+ "w15": {
+  "ariaOff": "true",
+  "enabled": false,
+  "fired": {
+   "fired": false,
+   "reason": "off"
+  },
+  "maxAlphaWhenOff": 31,
+  "nonEmptyWhenOff": 1552,
+  "coloredPxWhenOff": 0,
+  "restored": true
+ },
+ "w16": {
+  "reducedMode": {
+   "fired": true,
+   "mode": "reduced",
+   "amp": 3,
+   "peaks": 1,
+   "color": "#8FA1B2",
+   "alpha": 0.7
+  },
+  "rafCalls": 0,
+  "animating": false,
+  "maxAlpha": 255
+ },
+ "w11": {
+  "conceal": 10,
+  "express": 0
+ },
+ "w12": {
+  "fired": 0
+ },
+ "w13": {
+  "attempts": 8,
+  "fired": 3
+ },
+ "w14": {
+  "diffPx": 0,
+  "maxDelta": 0
+ },
+ "w17_degrade": {
+  "degraded": true,
+  "liteClass": true
+ },
+ "w24": {
+  "settings": "none",
+  "sheet": "none",
+  "modal": "none",
+  "keygate": "none",
+  "main": "block"
+ },
+ "w25_landscape": {
+  "display": "none",
+  "state": {
+   "enabled": true,
+   "desktop": false,
+   "reduced": false,
+   "cooling": false,
+   "mounted": false,
+   "bannerOff": false,
+   "captureOff": false,
+   "degraded": false,
+   "rafCalls": 34,
+   "animating": false,
+   "reducedClass": false
+  }
+ },
+ "w25_keyboard": {
+  "display": "none",
+  "innerH": 460,
+  "vvH": 460
+ },
+ "w25_restored": {
+  "display": "block"
+ },
+ "latency": {
+  "off": [
+   1215,
+   725,
+   902,
+   727,
+   835,
+   776
+  ],
+  "on": [
+   960,
+   1211,
+   804,
+   696,
+   1432,
+   1037
+  ],
+  "offMedian": 835,
+  "onMedian": 1037,
+  "offAvg": 863,
+  "onAvg": 1023,
+  "deltaMedian": 202,
+  "waveCost": {
+   "maybeMs": 0.6,
+   "firstFrameMs": 4
+  }
+ },
+ "w19": {
+  "hasWrap": false,
+  "hasCanvas": false
+ }
+}

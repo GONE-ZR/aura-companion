@@ -26,7 +26,13 @@
     toastTimer = setTimeout(function () {
       t.classList.remove("show");
       t.hidden = true;
-    }, 2600);
+    }, 3000);
+    /* 点一下也能立刻关掉 */
+    t.onclick = function () {
+      if (toastTimer) clearTimeout(toastTimer);
+      t.classList.remove("show");
+      t.hidden = true;
+    };
   }
 
   var modalResolve = null;
@@ -682,9 +688,17 @@
     updateBar = $("update-bar");
     registerSW();
     var ub = $("ub-update");
-    if (ub) ub.addEventListener("click", doUpdate);
+    if (ub) ub.addEventListener("click", function () {
+      /* APK / 无 SW：交给 updater 状态机（按钮文案、超时、防连点都由它管） */
+      if (!REG && window.Aura.updater && window.Aura.updater.onPrimaryClick) {
+        window.Aura.updater.onPrimaryClick();
+        return;
+      }
+      doUpdate();
+    });
     var us = $("ub-skip");
     if (us) us.addEventListener("click", function () {
+      if (window.Aura.updater && window.Aura.updater.dismiss) window.Aura.updater.dismiss();
       setUpdateBar(false);
       updatePending = false;
       S.set(S.KEYS.updateSkipped, { v: "skip-" + Date.now() });
@@ -712,17 +726,14 @@
     var cu = $("btn-check-update");
     if (cu) cu.addEventListener("click", function () {
       if (!REG) {
-        /* APK / 无 Service Worker：改去查安装包有没有新版 */
-        if (window.Aura.updater && window.Aura.updater.check) {
-          toast("正在检查新版…");
-          window.Aura.updater.check().then(function (m) {
-            if (m) {
-              window.Aura.updater.showBar(m);
-              toast("有新版 v" + m.version + "，点上面的按钮下载");
-            } else {
-              toast("已经是最新版（v" + (window.Aura.updater.CURRENT || "") + "）");
-            }
-          }).catch(function () { toast("检查失败，稍后再试"); });
+        /* APK / 无 Service Worker：走 updater 状态机（8 秒超时 + finally 复位） */
+        if (window.Aura.updater && window.Aura.updater.startCheck) {
+          window.Aura.updater.startCheck().then(function (m) {
+            var st = window.Aura.updater._state ? window.Aura.updater._state() : null;
+            if (st && st.state === "failed") return;        /* fail() 里已弹过具体原因 */
+            if (m) toast("有新版 v" + window.Aura.updater.appVersionOf(m) + "，点上面的按钮更新");
+            else toast("已经是最新版（v" + (window.Aura.updater.CURRENT || "") + "）");
+          });
         } else {
           toast("这个环境不支持自动更新");
         }
@@ -1203,6 +1214,7 @@
     /* ---------------- 15.18 第二部分：宽屏双栏 / 快捷键 / 通知守卫 ---------------- */
     try {
       if (window.AuraManga) window.AuraManga.init();
+      if (window.AuraWave) window.AuraWave.init();
       if (window.AuraWide) window.AuraWide.init();
       if (window.AuraKeys) window.AuraKeys.init();
       if (window.AuraNotify) window.AuraNotify.init();

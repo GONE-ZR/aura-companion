@@ -1,0 +1,294 @@
+{
+ "bubble_font_not_smiley": {
+  "ok": true,
+  "ev": "气泡正文 font-family = -apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", \"Noto Sans SC\", sans-serif",
+  "detail": {
+   "font": "-apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", \"Noto Sans SC\", sans-serif"
+  }
+ },
+ "bubble_flat": {
+  "ok": true,
+  "ev": "background-image = none",
+  "detail": {
+   "bgImage": "none"
+  }
+ },
+ "contrast_45": {
+  "ok": true,
+  "ev": "8 组最低 13.86:1",
+  "detail": {
+   "rows": [
+    {
+     "bg": "warm",
+     "night": false,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "warm",
+     "night": true,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "dusk",
+     "night": false,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "dusk",
+     "night": true,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "cool",
+     "night": false,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "cool",
+     "night": true,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "gray",
+     "night": false,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    },
+    {
+     "bg": "gray",
+     "night": true,
+     "color": "rgb(42, 42, 42)",
+     "back": "rgb(253, 251, 244)",
+     "ratio": 13.86
+    }
+   ],
+   "min": 13.86
+  }
+ },
+ "dots_below_text": {
+  "ok": true,
+  "ev": "网点 z=0，正文容器 z=2",
+  "detail": null
+ },
+ "contrast_dark_45": {
+  "ok": true,
+  "ev": "深色 4 组最低 13.86:1",
+  "detail": {
+   "minDark": 13.86
+  }
+ },
+ "font_scale": {
+  "ok": true,
+  "ev": "font-size 16.5 → 26.4，横向溢出 0px",
+  "detail": {
+   "base": 16.5,
+   "big": 26.4,
+   "overflowX": 0,
+   "comic": true
+  }
+ },
+ "patience_not_in_ui": {
+  "ok": true,
+  "ev": "{\"hasPatienceWord\":false,\"hasEmotionWord\":false,\"attrs\":[]}",
+  "detail": null
+ },
+ "emotion_value_not_in_ui": {
+  "ok": true,
+  "ev": "{\"hasPatienceWord\":false,\"hasEmotionWord\":false,\"attrs\":[]}",
+  "detail": null
+ },
+ "session_switch_keeps_emotion": {
+  "ok": true,
+  "ev": "忍耐 73→73，状态 tired→tired，valence 0.42→0.42",
+  "detail": {
+   "p1": 73,
+   "p2": 73,
+   "s1": "tired",
+   "s2": "tired",
+   "v1": 0.42,
+   "v2": 0.42
+  }
+ },
+ "mode_switch_keeps_person": {
+  "ok": true,
+  "ev": "{\"p1\":73,\"p2\":73,\"v1\":0.42,\"v2\":0.42,\"bg\":[\"warm\",\"warm\"],\"memSame\":true}",
+  "detail": null
+ },
+ "empty_session_no_crash": {
+  "ok": true,
+  "ev": "{\"threw\":null,\"errs\":[]}",
+  "detail": null
+ },
+ "safety_before_persona": {
+  "ok": true,
+  "ev": "{\"card\":true,\"bubble\":true,\"hotline\":true,\"inputEnabled\":true,\"focusOK\":true,\"midElement\":\"I.fig-body\"}",
+  "detail": null
+ },
+ "safety_exit": {
+  "ok": true,
+  "ev": "输入框可用=true，可聚焦=true，屏幕中心=I.fig-body",
+  "detail": null
+ },
+ "no_key_no_fallback": {
+  "ok": true,
+  "ev": "点发送后：/api/chat* 请求 0 次，直连模型 0 次，引导层=false",
+  "detail": {
+   "urls": []
+  }
+ },
+ "wave_static_plain": {
+  "ok": true,
+  "ev": "静止两帧一致=true，最大 alpha=15，非空行=[0,774,774,0]",
+  "detail": {
+   "mounted": true,
+   "same": true,
+   "maxA": 15,
+   "rows": [
+    0,
+    774,
+    774,
+    0
+   ],
+   "oneRow": true,
+   "safety": {
+    "fired": false,
+    "reason": "safety"
+   },
+   "h": 4,
+   "w": 780,
+   "exportFn": "undefined"
+  }
+ },
+ "wave_safety_off": {
+  "ok": true,
+  "ev": "安全轮触发结果={\"fired\":false,\"reason\":\"safety\"}",
+  "detail": null
+ },
+ "wave_not_in_export": {
+  "ok": true,
+  "ev": "分享导出 API 是否存在: undefined（不存在 → 无对象可验，记未覆盖）",
+  "detail": null
+ },
+ "wave_contrast_dark": {
+  "ok": false,
+  "ev": "深色 4 背景 × 4 色最低 1.17:1",
+  "detail": {
+   "rows": [
+    [
+     "warm",
+     "warm",
+     3.53
+    ],
+    [
+     "warm",
+     "red",
+     2.29
+    ],
+    [
+     "warm",
+     "blue",
+     1.99
+    ],
+    [
+     "warm",
+     "ink",
+     1.21
+    ],
+    [
+     "dusk",
+     "warm",
+     3.59
+    ],
+    [
+     "dusk",
+     "red",
+     2.33
+    ],
+    [
+     "dusk",
+     "blue",
+     1.98
+    ],
+    [
+     "dusk",
+     "ink",
+     1.2
+    ],
+    [
+     "cool",
+     "warm",
+     3.65
+    ],
+    [
+     "cool",
+     "red",
+     2.37
+    ],
+    [
+     "cool",
+     "blue",
+     2.06
+    ],
+    [
+     "cool",
+     "ink",
+     1.17
+    ],
+    [
+     "gray",
+     "warm",
+     3.63
+    ],
+    [
+     "gray",
+     "red",
+     2.34
+    ],
+    [
+     "gray",
+     "blue",
+     2.01
+    ],
+    [
+     "gray",
+     "ink",
+     1.18
+    ]
+   ],
+   "min": 1.17
+  }
+ },
+ "remote_accent_respects_emotion": {
+  "ok": true,
+  "ev": "情绪色 202 → 远程 223 → 情绪再应用 223（save.accent 存在）",
+  "detail": {
+   "before": "202",
+   "afterRemote": "223",
+   "afterEmotion": "223",
+   "hasApi": true,
+   "via": "apply",
+   "saved": "save.accent 存在"
+  }
+ },
+ "wave_desktop_off": {
+  "ok": true,
+  "ev": "Electron UA 下 #wave-wrap 存在=false",
+  "detail": {
+   "hasWrap": false,
+   "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36 Electron/33.0.0"
+  }
+ }
+}

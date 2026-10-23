@@ -1,0 +1,113 @@
+{
+ "A_newer": {
+  "got": true,
+  "ver": "1.0.22",
+  "st": {
+   "state": "idle",
+   "hasUpdate": true,
+   "latest": {
+    "version": "1.0.22",
+    "apk": "aura-companion.apk",
+    "url": "http://127.0.0.1:8123/apk",
+    "date": "2026-10-23"
+   },
+   "inFlight": false,
+   "lastError": null,
+   "progress": 0
+  },
+  "barHidden": false,
+  "text": "有新版 v1.0.22",
+  "btn": "现在更新"
+ },
+ "B_doubleClick": {
+  "st": {
+   "state": "downloading",
+   "hasUpdate": true,
+   "latest": {
+    "version": "1.0.22",
+    "apk": "aura-companion.apk",
+    "url": "http://127.0.0.1:8123/apk",
+    "date": "2026-10-23"
+   },
+   "inFlight": false,
+   "lastError": null,
+   "progress": 0
+  },
+  "btn": "下载中 0%",
+  "disabled": false
+ },
+ "B_progress": {
+  "st": {
+   "state": "downloading",
+   "hasUpdate": true,
+   "latest": {
+    "version": "1.0.22",
+    "apk": "aura-companion.apk",
+    "url": "http://127.0.0.1:8123/apk",
+    "date": "2026-10-23"
+   },
+   "inFlight": false,
+   "lastError": null,
+   "progress": 8
+  },
+  "btn": "下载中 8%",
+  "barHidden": false
+ },
+ "B_done": {
+  "st": {
+   "state": "downloading",
+   "hasUpdate": true,
+   "latest": {
+    "version": "1.0.22",
+    "apk": "aura-companion.apk",
+    "url": "http://127.0.0.1:8123/apk",
+    "date": "2026-10-23"
+   },
+   "inFlight": false,
+   "lastError": null,
+   "progress": 63
+  },
+  "btn": "下载中 63%"
+ },
+ "C_same": {
+  "got": false,
+  "st": {
+   "state": "idle",
+   "hasUpdate": false,
+   "latest": null,
+   "inFlight": false,
+   "lastError": null,
+   "progress": 0
+  },
+  "barHidden": true
+ },
+ "D_badSource": {
+  "state": "failed",
+  "err": {
+   "kind": "bad-source",
+   "text": "更新源配置有误"
+  },
+  "hasUpdate": false,
+  "btn": "重试",
+  "barHidden": false,
+  "text": "更新源配置有误"
+ },
+ "E_offline": {
+  "ms": 3,
+  "state": "failed",
+  "err": {
+   "kind": "network",
+   "text": "无法连接到更新服务器"
+  },
+  "hasUpdate": false,
+  "btn": "重试"
+ },
+ "F_retry": {
+  "labelBefore": "重试",
+  "disabledBefore": false,
+  "barHiddenBefore": false,
+  "during": "checking",
+  "after": "switching",
+  "barHidden": false
+ }
+}

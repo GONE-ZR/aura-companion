@@ -591,11 +591,30 @@ def api_chat_stream():
 
 
 # ---------------------------------------------------------------- 语音合成
-def _edge_tts_bytes(text: str, voice: str, rate: str, pitch: str, volume: str) -> bytes:
+def _edge_num(v, kind):
+    """前端传的是倍数（1.0 = 正常），edge-tts 要的是 "+5%" / "+2Hz" 字符串。
+    之前直接把 0.95 传给 edge-tts，合成必然失败 → 全部静默回落系统语音。"""
+    if isinstance(v, (int, float)):
+        delta = round((float(v) - 1.0) * 100)
+        return ("%+d%%" % delta) if kind == "pct" else ("%+dHz" % delta)
+    s = str(v or "").strip()
+    if not s:
+        return "+0%" if kind == "pct" else "+0Hz"
+    return s
+
+
+def _edge_tts_bytes(text: str, voice: str, rate, pitch, volume) -> bytes:
     import edge_tts
 
+    rate_s = _edge_num(rate, "pct")
+    pitch_s = _edge_num(pitch, "hz")
+    vol_s = _edge_num(volume, "pct") if volume not in (None, "") else "+0%"
+    # volume 前端可能传 1.0（倍数）或 0（百分比增量），统一成 %
+    if isinstance(volume, (int, float)) and float(volume) == 0:
+        vol_s = "+0%"
+
     async def run():
-        comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
+        comm = edge_tts.Communicate(text, voice, rate=rate_s, pitch=pitch_s, volume=vol_s)
         buf = bytearray()
         async for chunk in comm.stream():
             if chunk.get("type") == "audio" and chunk.get("data"):

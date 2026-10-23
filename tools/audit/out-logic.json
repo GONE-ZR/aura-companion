@@ -1,0 +1,112 @@
+{
+ "blank_at_90": {
+  "ok": true,
+  "ev": "patience=90 & valence=+0.9 → blank",
+  "detail": {
+   "s90": "blank",
+   "s60": "serious",
+   "s89": "serious"
+  }
+ },
+ "serious_at_60": {
+  "ok": true,
+  "ev": "patience=60 → serious，=89 → serious",
+  "detail": {
+   "s60": "serious",
+   "s89": "serious"
+  }
+ },
+ "assembly_order": {
+  "ok": true,
+  "ev": "messages = [user:A-用户原话 | assistant:B-她的回复 | user:（系统补充，不要复述 | user:C-最后一句]",
+  "detail": {
+   "n": 4
+  }
+ },
+ "system_stable": {
+  "ok": true,
+  "ev": "两次不同时间/忍耐值 → system 字节完全一致",
+  "detail": {
+   "len": 2730
+  }
+ },
+ "system_static": {
+  "ok": true,
+  "ev": "system 静态=true，未替换占位符=false（含固定示例 08:00，属静态文案）",
+  "detail": {
+   "hasPlaceholder": false,
+   "stable": true
+  }
+ },
+ "max_tokens_ok": {
+  "ok": true,
+  "ev": "chat.js 里 max_tokens = [1200,600]",
+  "detail": {
+   "values": [
+    1200,
+    600
+   ]
+  }
+ },
+ "voice_layer_replace": {
+  "ok": false,
+  "ev": "默认「热情度」档仍是 (档位+公式)/2 的加权平均（voice-layer.js:143-144），仅情绪覆盖/撒娇是整体替换",
+  "detail": {
+   "layer1": "撒娇",
+   "rate1": 0.95,
+   "layer2": "热情度-平",
+   "rate2": 0.918,
+   "blended": true
+  }
+ },
+ "wave_amp_le2": {
+  "ok": true,
+  "ev": "10 组 + conceal 最大值 = 2",
+  "detail": {
+   "xs": [
+    [
+     0,
+     1
+    ],
+    [
+     0.1,
+     1.1
+    ],
+    [
+     0.2,
+     1.2
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.4,
+     1.4
+    ],
+    [
+     0.5,
+     1.5
+    ],
+    [
+     0.6,
+     1.6
+    ],
+    [
+     0.8,
+     1.8
+    ],
+    [
+     0.95,
+     1.95
+    ],
+    [
+     1,
+     2
+    ]
+   ],
+   "conceal": 2,
+   "max": 2
+  }
+ }
+}

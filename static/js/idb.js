@@ -367,15 +367,64 @@
     if (mirrorTimer) return;
     mirrorTimer = setTimeout(function () {
       mirrorTimer = null;
-      var batch = pendingWrites.splice(0, pendingWrites.length);
-      batch.forEach(function (item) {
-        (item.items || []).forEach(function (v) {
-          if (!v) return;
-          if (item.store === "messages" && !v.id) return;
-          put(item.store, v);
-        });
-      });
+      drain();
     }, 400);
+  }
+
+  /* 把队列里的镜像立刻写完（删除前必须先 await，否则删除会被排队中的写回覆盖） */
+  function drain() {
+    if (mirrorTimer) { clearTimeout(mirrorTimer); mirrorTimer = null; }
+    var batch = pendingWrites.splice(0, pendingWrites.length);
+    var jobs = [];
+    batch.forEach(function (item) {
+      (item.items || []).forEach(function (v) {
+        if (!v) return;
+        if (item.store === "messages" && !v.id) return;
+        jobs.push(put(item.store, v));
+      });
+    });
+    return Promise.all(jobs).catch(function () { return []; });
+  }
+  function flush() { return drain(); }
+
+  /* 按会话物理删除（messages 按 sessionId 删 + sessions 主键删） */
+  function deleteSessionMessages(sid) {
+    return tx(["messages"], "readwrite").then(function (t) {
+      return new Promise(function (res) {
+        var n = 0;
+        try {
+          var idx = t.objectStore("messages").index("sessionId");
+          var cur = idx.openCursor(IDBKeyRange.only(String(sid || "")));
+          cur.onsuccess = function (e) {
+            var c = e.target.result;
+            if (!c) { res(n); return; }
+            c.delete(); n += 1; c.continue();
+          };
+          cur.onerror = function () { res(n); };
+        } catch (e) { res(n); }
+      });
+    }).catch(function () { return 0; });
+  }
+
+  function deleteSession(sid) {
+    if (!sid) return Promise.resolve(0);
+    return deleteSessionMessages(sid).then(function (n) {
+      return tx(["sessions"], "readwrite").then(function (t) {
+        return new Promise(function (res) {
+          var r = t.objectStore("sessions").delete(sid);
+          r.onsuccess = function () { res(n); };
+          r.onerror = function () { res(n); };
+        });
+      }).catch(function () { return n; });
+    });
+  }
+
+  /* localStorage 键被删时同步删镜像（否则 hydrate 会把删掉的又写回来） */
+  function forget(lsKey) {
+    if (!lsKey) return Promise.resolve(0);
+    if (lsKey.indexOf("aura_msgs_") === 0) return deleteSessionMessages(lsKey.slice("aura_msgs_".length));
+    if (lsKey === "aura_messages") return deleteSessionMessages("");
+    return Promise.resolve(0);
   }
 
   /* ---------------- 软删除专用：靠 deletedAt 索引，不扫全表 ----------------
@@ -442,6 +491,10 @@
     gate: gate,
     hydrate: hydrate,
     mirror: mirror,
+    flush: flush,
+    forget: forget,
+    deleteSession: deleteSession,
+    deleteSessionMessages: deleteSessionMessages,
     clearStore: clearStore,
     deadBefore: deadBefore,
     purgeDead: purgeDead,

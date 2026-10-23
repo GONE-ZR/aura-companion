@@ -34,10 +34,8 @@
     log.textContent = "";
     var e = el("div", "empty-state");
     var t = el("p", "empty-text");
-    /* 文案可被后台管理页远程改写（没设过就用默认那句） */
-    var custom = "";
-    try { custom = window.Aura.store.getStr("aura_text_empty", "") || ""; } catch (err) { custom = ""; }
-    t.textContent = custom || "我在。";
+    /* 文案属于代码，不从 localStorage 读（远程配置拉到后直接改 DOM） */
+    t.textContent = "我在。";
     var d = el("div", "empty-dot");
     e.appendChild(t);
     e.appendChild(d);
@@ -398,6 +396,23 @@
         });
         st0.core = obs.core;
         st0.state = C.mapState(st0.core, st0.patience);     /* 外显层跟着内核走 */
+        /* 波动线上下文（只存内存，不进注入、不进界面查询） */
+        try {
+          var pBefore = (engineState() || {}).patience;
+          window.__waveCtx = {
+            delta: obs.delta || 0,
+            newResidue: (obs.triggers || []).reduce(function (m, t) { return Math.max(m, Math.abs(t.delta)); }, 0),
+            intent: st0.core.intent,
+            state: st0.state,
+            valence: st0.core.valence,
+            arousal: st0.core.arousal,
+            residueId: (st0.core.residue[st0.core.residue.length - 1] || {}).id || "",
+            safety: false,
+            first: messages.filter(function (m) { return m.role === "ai"; }).length === 0,
+            offline: false,
+            layerId: (messages[messages.length - 1] || {}).id || ""
+          };
+        } catch (e) { }
         _engine = st0;
         saveEngine();
         try {
@@ -889,6 +904,13 @@
               bubble.classList.remove("thinking");
               if (think && think.parentNode) think.parentNode.removeChild(think);
               if (dots && dots.parentNode) dots.parentNode.removeChild(dots);
+              /* 波动线：首字渲染完成后 200ms 再出现，不抢在文字前 */
+              try {
+                var wc = window.__waveCtx;
+                if (wc && window.AuraWave) {
+                  setTimeout(function () { window.AuraWave.maybe(wc); }, 200);
+                }
+              } catch (e) { /* 波动线失败不影响对话 */ }
             }
             rawAll += delta;
             text = stripMeta(rawAll);

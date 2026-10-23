@@ -705,6 +705,9 @@
   window.Aura.features.init = init;
   window.Aura.features.sessions = sessions;
   window.Aura.features.newSession = newSession;
+  /* 对外也暴露删除：宽屏双栏右键菜单（wide.js:207）走的是这个入口，
+     不导出会直接 TypeError（已实测）。 */
+  window.Aura.features.deleteSession = deleteSession;
   window.Aura.features.stats = stats;
   window.Aura.features.exportMarkdown = exportMarkdown;
   window.Aura.features.exportJson = exportJson;

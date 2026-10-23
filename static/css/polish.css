@@ -569,12 +569,16 @@ body[data-theme="dark"] {
 }
 
 #toast {
-  font-family: var(--sans);
-  font-size: 12.5px;
-  border-radius: 3px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  box-shadow: 0 10px 30px -20px rgba(0, 0, 0, .5);
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  border-radius: 10px;
+  /* 固定配色：不跟随 --text/--bg/--surface —— comic 模式会重定义 --text，
+     暗色主题下 --bg 又是深色，两者一叠加就成了“黑底黑字”。 */
+  background: #FDFBF4;
+  color: #2A2A2A;
+  border: 0;
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, .35);
 }
 
 /* ---------- 滚动条 ---------- */

@@ -1,0 +1,1809 @@
+{
+ "root": "D:\\opencode workspace\\aura-companion",
+ "total": 100,
+ "pass": 98,
+ "fail": 2,
+ "withRuntime": 30,
+ "results": [
+  {
+   "id": "A001",
+   "group": "人设与情绪",
+   "text": "忍耐值只允许出现在提示词状态块，不允许出现在任何界面文案里",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 10,
+     "at": "static/js/prompt.js:129",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/app.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A002",
+   "group": "人设与情绪",
+   "text": "patience ≥90 时外显强制 blank，与 valence 无关",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "blank_at_90",
+   "evidence": [
+    {
+     "f": "static/js/engine.js",
+     "hits": 1,
+     "at": "static/js/engine.js:35",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 4,
+     "at": "static/js/emotion-core.js:213",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A003",
+   "group": "人设与情绪",
+   "text": "patience ≥60 时外显进入 serious",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "serious_at_60",
+   "evidence": [
+    {
+     "f": "static/js/engine.js",
+     "hits": 1,
+     "at": "static/js/engine.js:34",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A004",
+   "group": "人设与情绪",
+   "text": "外显状态表固定 7 态（calm..blank）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/engine.js",
+     "hits": 1,
+     "at": "static/js/engine.js:39",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A005",
+   "group": "人设与情绪",
+   "text": "system 里不得出现时间/忍耐值/状态（静态人设永不改）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "system_static",
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 6,
+     "at": "static/js/prompt.js:28",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:390",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A006",
+   "group": "人设与情绪",
+   "text": "动态状态块注入到最后一条 user，而非 system",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:439",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A007",
+   "group": "人设与情绪",
+   "text": "单轮 valence 变化不超过 0.15",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 1,
+     "at": "static/js/emotion-core.js:23",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A008",
+   "group": "人设与情绪",
+   "text": "情绪核字段齐全：valence/arousal/target/residue/bond/intent",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 14,
+     "at": "static/js/emotion-core.js:6",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 9,
+     "at": "static/js/emotion-core.js:6",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 11,
+     "at": "static/js/emotion-core.js:6",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 29,
+     "at": "static/js/emotion-core.js:6",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 21,
+     "at": "static/js/emotion-core.js:6",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A009",
+   "group": "人设与情绪",
+   "text": "外显状态由情绪核映射（mapState），不是另存一套",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 1,
+     "at": "static/js/emotion-core.js:213",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:400",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A010",
+   "group": "人设与情绪",
+   "text": "意图分 conceal / express 两类",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 32,
+     "at": "static/js/emotion-core.js:50",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 25,
+     "at": "static/js/emotion-core.js:14",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A011",
+   "group": "人设与情绪",
+   "text": "忍耐值有上下限与衰减（不会越界/不会永久卡死）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/engine.js",
+     "hits": 3,
+     "at": "static/js/engine.js:23",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/engine.js",
+     "hits": 3,
+     "at": "static/js/engine.js:24",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/engine.js",
+     "hits": 1,
+     "at": "static/js/engine.js:246",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A012",
+   "group": "人设与情绪",
+   "text": "忍耐值不得出现在任何界面元素与文案中",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "patience_not_in_ui",
+   "evidence": [
+    {
+     "f": "static/js/app.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A013",
+   "group": "人设与情绪",
+   "text": "情绪数值不得出现在界面文本里",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "emotion_value_not_in_ui",
+   "evidence": [
+    {
+     "f": "templates/index.html",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A014",
+   "group": "人设与情绪",
+   "text": "状态注入只有一句话【现在】…",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:303",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 1,
+     "at": "static/js/emotion-core.js:311",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A015",
+   "group": "人设与情绪",
+   "text": "情绪核不新增存储字段（仍单 key aura_engine_v1）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:295",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/emotion-core.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A016",
+   "group": "人设与情绪",
+   "text": "切会话不重置情绪（引擎状态是单一全局 key）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "session_switch_keeps_emotion",
+   "evidence": []
+  },
+  {
+   "id": "A017",
+   "group": "人设与情绪",
+   "text": "切模式只写 aura_work_mode，不动情绪/记忆/背景",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "mode_switch_keeps_person",
+   "evidence": [
+    {
+     "f": "static/js/modes.js",
+     "hits": 1,
+     "at": "static/js/modes.js:17",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/modes.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A018",
+   "group": "人设与情绪",
+   "text": "生活侧事件有归因（不是冲你）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/engine.js",
+     "hits": 1,
+     "at": "static/js/engine.js:65",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A019",
+   "group": "会话与记忆",
+   "text": "会话唯一 key = aura_sessions（旧键一次性迁移）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/records.js",
+     "hits": 1,
+     "at": "static/js/records.js:26",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/features.js",
+     "hits": 1,
+     "at": "static/js/features.js:14",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A020",
+   "group": "会话与记忆",
+   "text": "删除是软删除（deletedAt），保留 30 天",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/records.js",
+     "hits": 2,
+     "at": "static/js/records.js:29",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/idb.js",
+     "hits": 11,
+     "at": "static/js/idb.js:24",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A021",
+   "group": "会话与记忆",
+   "text": "回收站只读一个数据源（records.trash）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/review.js",
+     "hits": 1,
+     "at": "static/js/review.js:171",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A022",
+   "group": "会话与记忆",
+   "text": "回收站有「恢复」",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/review.js",
+     "hits": 5,
+     "at": "static/js/review.js:162",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A023",
+   "group": "会话与记忆",
+   "text": "彻底删除真的删数据（hardDeleteSession 移除 aura_msgs_*）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/records.js",
+     "hits": 1,
+     "at": "static/js/records.js:263",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/review.js",
+     "hits": 1,
+     "at": "static/js/review.js:206",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A024",
+   "group": "会话与记忆",
+   "text": "会话全删后 currentSession 有兜底（空态不抛错）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "empty_session_no_crash",
+   "evidence": [
+    {
+     "f": "static/js/features.js",
+     "hits": 1,
+     "at": "static/js/features.js:78",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A025",
+   "group": "会话与记忆",
+   "text": "记忆三档置信度 0.5/0.7/0.9",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/memfacts.js",
+     "hits": 1,
+     "at": "static/js/memfacts.js:23",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A026",
+   "group": "会话与记忆",
+   "text": "记忆注入 top-8",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/memfacts.js",
+     "hits": 1,
+     "at": "static/js/memfacts.js:199",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A027",
+   "group": "会话与记忆",
+   "text": "记忆可删（status deleted / 物理移除）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/memfacts.js",
+     "hits": 18,
+     "at": "static/js/memfacts.js:5",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A028",
+   "group": "会话与记忆",
+   "text": "摘要已接线（并进最后一条 user 动态块，不插在历史前）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:434",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/chat.js",
+     "hits": 8,
+     "at": "static/js/chat.js:253",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A029",
+   "group": "会话与记忆",
+   "text": "历史上限 20 条，超预算一次裁到 12 条",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:24",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/prompt.js",
+     "hits": 3,
+     "at": "static/js/prompt.js:23",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A030",
+   "group": "会话与记忆",
+   "text": "历史原话 append-only（不写状态块进历史）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:427",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A031",
+   "group": "会话与记忆",
+   "text": "孤儿消息/会话有过滤与登记",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/features.js",
+     "hits": 2,
+     "at": "static/js/features.js:47",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A032",
+   "group": "会话与记忆",
+   "text": "导出时间统一走 AuraTime",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/features.js",
+     "hits": 4,
+     "at": "static/js/features.js:187",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/features.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A033",
+   "group": "会话与记忆",
+   "text": "IndexedDB 有 7 个 store",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/idb.js",
+     "hits": 1,
+     "at": "static/js/idb.js:26",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A034",
+   "group": "会话与记忆",
+   "text": "schemaVersion 超过支持上限时进入只读模式",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/idb.js",
+     "hits": 6,
+     "at": "static/js/idb.js:25",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/idb.js",
+     "hits": 6,
+     "at": "static/js/idb.js:45",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A035",
+   "group": "安全",
+   "text": "危机识别命中后给热线 400-161-9995",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/safety.js",
+     "hits": 1,
+     "at": "static/js/safety.js:16",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/safety.js",
+     "hits": 1,
+     "at": "static/js/safety.js:80",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A036",
+   "group": "安全",
+   "text": "安全干预优先于人设（先分类再装配）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "safety_before_persona",
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 2,
+     "at": "static/js/chat.js:423",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A037",
+   "group": "安全",
+   "text": "暴力内容有独立分类与回复",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/safety.js",
+     "hits": 4,
+     "at": "static/js/safety.js:25",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/safety.js",
+     "hits": 1,
+     "at": "static/js/safety.js:91",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A038",
+   "group": "安全",
+   "text": "露骨要求只由性格挡回，不切安全流程",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/safety.js",
+     "hits": 1,
+     "at": "static/js/safety.js:74",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A039",
+   "group": "安全",
+   "text": "否定句不误判为危机",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/safety.js",
+     "hits": 3,
+     "at": "static/js/safety.js:34",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/safety.js",
+     "hits": 1,
+     "at": "static/js/safety.js:43",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A040",
+   "group": "安全",
+   "text": "安全干预轮不触发波动线",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "wave_safety_off",
+   "evidence": []
+  },
+  {
+   "id": "A041",
+   "group": "安全",
+   "text": "安全干预页必须可点\"我没事\"退出，不锁死",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "safety_exit",
+   "evidence": []
+  },
+  {
+   "id": "A042",
+   "group": "安全",
+   "text": "热线号码与官方一致（400-161-9995）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/safety.js",
+     "hits": 1,
+     "at": "static/js/safety.js:16",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A043",
+   "group": "安全",
+   "text": "未填紧急联系人时用「你信任的人」兜底",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 5,
+     "at": "static/js/prompt.js:323",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A044",
+   "group": "模型层",
+   "text": "无 Key 且无代理时不得静默回落 localhost/api/chat，必须明确报错",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "no_key_no_fallback",
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 3,
+     "at": "static/js/chat.js:828",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:810",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A045",
+   "group": "模型层",
+   "text": "只有显式选\"服务器\"模式才走 /api/chat/stream",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:810",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A046",
+   "group": "模型层",
+   "text": "thinking 恒关",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 5,
+     "at": "static/js/chat.js:521",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A047",
+   "group": "模型层",
+   "text": "参数白名单（未知参数丢弃）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:485",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A048",
+   "group": "模型层",
+   "text": "装配顺序：静态 system → 历史 → 最后一条 user",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "assembly_order",
+   "evidence": [
+    {
+     "f": "static/js/prompt.js",
+     "hits": 1,
+     "at": "static/js/prompt.js:381",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A049",
+   "group": "模型层",
+   "text": "前缀缓存：system 逐字节稳定（不含时间/状态）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "system_stable",
+   "evidence": []
+  },
+  {
+   "id": "A050",
+   "group": "模型层",
+   "text": "直连失败可回退代理（有通道时）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 3,
+     "at": "static/js/chat.js:551",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A051",
+   "group": "模型层",
+   "text": "max_tokens 足够（≥1200），不会被推理吃光",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "max_tokens_ok",
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 4,
+     "at": "static/js/chat.js:453",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A052",
+   "group": "模型层",
+   "text": "SSE 强制 UTF-8 解码（中文不乱码）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:840",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A053",
+   "group": "模型层",
+   "text": "停止生成保留已输出内容",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:795",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A054",
+   "group": "模型层",
+   "text": "首字前有 154–440ms 的人工延迟（可控）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:583",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A055",
+   "group": "模型层",
+   "text": "模型名与版本可查（不做硬编码回落）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 6,
+     "at": "static/js/chat.js:460",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A056",
+   "group": "媒体",
+   "text": "图片走本地（media store / 内存），不上传服务器",
+   "sev": "S1",
+   "static": "FAIL",
+   "staticWhy": "未命中: static/js/idb.js /media/",
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 4,
+     "at": "static/js/chat.js:18",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A057",
+   "group": "媒体",
+   "text": "发送前压缩（长边限制）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 2,
+     "at": "static/js/chat.js:1121",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A058",
+   "group": "媒体",
+   "text": "图片 dataURL 不进 localStorage",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 1,
+     "at": "static/js/chat.js:18",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A059",
+   "group": "媒体",
+   "text": "图片渲染不拉伸（object-fit）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/css/*.css",
+     "hits": 2,
+     "at": "static/css/app.css:778",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A060",
+   "group": "媒体",
+   "text": "单次只允许一张待发图（替换而非堆叠）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 9,
+     "at": "static/js/chat.js:19",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A061",
+   "group": "媒体",
+   "text": "删除消息时媒体一并清理",
+   "sev": "S2",
+   "static": "FAIL",
+   "staticWhy": "未命中: static/js/records.js /media|transient/",
+   "rt": null,
+   "evidence": []
+  },
+  {
+   "id": "A062",
+   "group": "媒体",
+   "text": "语音转文字有权限失败提示",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 18,
+     "at": "static/js/voice.js:922",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A063",
+   "group": "语音",
+   "text": "单音色 zh-CN-XiaoxiaoNeural",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 2,
+     "at": "static/js/voice.js:106",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/voice.js",
+     "hits": 6,
+     "at": "static/js/voice.js:106",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A064",
+   "group": "语音",
+   "text": "三层语气命中即整体替换，不做加权平均",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "voice_layer_replace",
+   "evidence": [
+    {
+     "f": "static/js/voice-layer.js",
+     "hits": 7,
+     "at": "static/js/voice-layer.js:2",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A065",
+   "group": "语音",
+   "text": "rate/pitch 有硬钳制",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 2,
+     "at": "static/js/voice.js:19",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/voice.js",
+     "hits": 2,
+     "at": "static/js/voice.js:20",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A066",
+   "group": "语音",
+   "text": "夜间自动降速与音量上限",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 4,
+     "at": "static/js/voice.js:21",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/voice.js",
+     "hits": 2,
+     "at": "static/js/voice.js:22",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A067",
+   "group": "语音",
+   "text": "省略号处 250–300ms 停顿",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 2,
+     "at": "static/js/voice.js:25",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A068",
+   "group": "语音",
+   "text": "段间呼吸 200–400ms",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 2,
+     "at": "static/js/voice.js:26",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A069",
+   "group": "语音",
+   "text": "三级回落：服务器 → 本机 → 系统语音",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 14,
+     "at": "static/js/voice.js:441",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/voice.js",
+     "hits": 3,
+     "at": "static/js/voice.js:441",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A070",
+   "group": "语音",
+   "text": "自动朗读开关持久化",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/voice.js",
+     "hits": 3,
+     "at": "static/js/voice.js:16",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A071",
+   "group": "视觉",
+   "text": "气泡正文不得使用得意黑（Smiley Sans）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "bubble_font_not_smiley",
+   "evidence": [
+    {
+     "f": "static/css/manga.css",
+     "hits": 2,
+     "at": "static/css/manga.css:274",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A072",
+   "group": "视觉",
+   "text": "正文对比度 ≥4.5:1（4 背景 × 明暗）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "contrast_45",
+   "evidence": []
+  },
+  {
+   "id": "A073",
+   "group": "视觉",
+   "text": "时间戳等宽且宽度固定",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/css/time.css",
+     "hits": 2,
+     "at": "static/css/time.css:16",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A074",
+   "group": "视觉",
+   "text": "字体缩放生效且不破版",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "font_scale",
+   "evidence": []
+  },
+  {
+   "id": "A075",
+   "group": "视觉",
+   "text": "减弱动效时全局关闭动画",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/css/app.css",
+     "hits": 1,
+     "at": "static/css/app.css:1813",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A076",
+   "group": "视觉",
+   "text": "网点在文字下方（不压字）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "dots_below_text",
+   "evidence": []
+  },
+  {
+   "id": "A077",
+   "group": "视觉",
+   "text": "气泡平涂（无渐变）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "bubble_flat",
+   "evidence": []
+  },
+  {
+   "id": "A078",
+   "group": "视觉",
+   "text": "波动线只在主聊天页挂载",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/wave.js",
+     "hits": 1,
+     "at": "static/js/wave.js:97",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A079",
+   "group": "视觉",
+   "text": "波动线静止时无色、无起伏、无呼吸",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "wave_static_plain",
+   "evidence": []
+  },
+  {
+   "id": "A080",
+   "group": "视觉",
+   "text": "波动线振幅恒 ≤2px",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "wave_amp_le2",
+   "evidence": [
+    {
+     "f": "static/js/wave.js",
+     "hits": 1,
+     "at": "static/js/wave.js:237",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A081",
+   "group": "视觉",
+   "text": "分享图不得包含波动线（当前无导出功能）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "wave_not_in_export",
+   "evidence": []
+  },
+  {
+   "id": "A082",
+   "group": "视觉",
+   "text": "桌面端不挂波动线",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "wave_desktop_off",
+   "evidence": [
+    {
+     "f": "static/js/wave.js",
+     "hits": 4,
+     "at": "static/js/wave.js:37",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/wave.js",
+     "hits": 2,
+     "at": "static/js/wave.js:12",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A083",
+   "group": "视觉",
+   "text": "波动线深色背景合成对比度 ≥2.2:1",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "wave_contrast_dark",
+   "evidence": []
+  },
+  {
+   "id": "A084",
+   "group": "视觉",
+   "text": "深色模式正文对比度 ≥4.5:1",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "contrast_dark_45",
+   "evidence": []
+  },
+  {
+   "id": "A085",
+   "group": "视觉",
+   "text": "安全区适配（viewport-fit=cover + env）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "templates/index.html",
+     "hits": 1,
+     "at": "templates/index.html:5",
+     "expect": "present"
+    },
+    {
+     "f": "static/css/app.css",
+     "hits": 7,
+     "at": "static/css/app.css:326",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A086",
+   "group": "视觉",
+   "text": "键盘弹出后输入区不被遮挡（可视高度变化有处理）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/app.js",
+     "hits": 3,
+     "at": "static/js/app.js:372",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A087",
+   "group": "控制台",
+   "text": "后台必须登录后才能改配置",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "admin/routes.py",
+     "hits": 5,
+     "at": "admin/routes.py:5",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A088",
+   "group": "控制台",
+   "text": "后台任何聊天内容接口必须 404（不暴露聊天）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "admin_no_chat_api",
+   "evidence": [
+    {
+     "f": "admin/routes.py",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A089",
+   "group": "控制台",
+   "text": "App 轮询远程配置约 30s",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/remote-config.js",
+     "hits": 1,
+     "at": "static/js/remote-config.js:395",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A090",
+   "group": "控制台",
+   "text": "configVersion 单调递增（版本更低不覆盖）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/remote-config.js",
+     "hits": 12,
+     "at": "static/js/remote-config.js:69",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A091",
+   "group": "控制台",
+   "text": "killSwitch/安全项不可被远程关闭",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/remote-config.js",
+     "hits": 4,
+     "at": "static/js/remote-config.js:136",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A092",
+   "group": "控制台",
+   "text": "远程功能开关齐全（11 项）",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "remote/config.json",
+     "hits": 1,
+     "at": "remote/config.json:13",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A093",
+   "group": "控制台",
+   "text": "远程主题色不得覆盖情绪配色",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "remote_accent_respects_emotion",
+   "evidence": [
+    {
+     "f": "static/js/remote-config.js",
+     "hits": 6,
+     "at": "static/js/remote-config.js:160",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A094",
+   "group": "控制台",
+   "text": "后台响应里不得含任何 Key",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": "admin_no_key",
+   "evidence": []
+  },
+  {
+   "id": "A095",
+   "group": "控制台",
+   "text": "全项目无真实 Key 入库（.env 不在 git 里）",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": ".gitignore",
+     "hits": 3,
+     "at": ".gitignore:2",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/chat.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A096",
+   "group": "控制台",
+   "text": "图标上传有大小/类型限制",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "admin/routes.py",
+     "hits": 4,
+     "at": "admin/routes.py:175",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A097",
+   "group": "控制台",
+   "text": "危险操作需二次确认",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "admin/admin.html",
+     "hits": 2,
+     "at": "admin/admin.html:498",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A098",
+   "group": "控制台",
+   "text": "配置源三通道回退（同源 → gh-proxy → Pages）",
+   "sev": "S2",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/remote-config.js",
+     "hits": 2,
+     "at": "static/js/remote-config.js:16",
+     "expect": "present"
+    },
+    {
+     "f": "static/js/remote-config.js",
+     "hits": 1,
+     "at": "static/js/remote-config.js:18",
+     "expect": "present"
+    }
+   ]
+  },
+  {
+   "id": "A099",
+   "group": "控制台",
+   "text": "日志里不得出现聊天明文",
+   "sev": "S1",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "static/js/chat.js",
+     "hits": 0,
+     "at": "(无)",
+     "expect": "absent"
+    }
+   ]
+  },
+  {
+   "id": "A100",
+   "group": "控制台",
+   "text": "弱口令（默认密码）有提醒",
+   "sev": "S3",
+   "static": "PASS",
+   "staticWhy": null,
+   "rt": null,
+   "evidence": [
+    {
+     "f": "admin/admin.html",
+     "hits": 2,
+     "at": "admin/admin.html:137",
+     "expect": "present"
+    }
+   ]
+  }
+ ]
+}
