@@ -5,9 +5,9 @@
     "iconPack": "pack.default"
   },
   "commands": [],
-  "configVersion": 30,
+  "configVersion": 31,
   "copy": {
-    "emptyState": "配置校验-482246",
+    "emptyState": "我在。",
     "inputPlaceholder": "说点什么…"
   },
   "features": {
@@ -91,5 +91,5 @@
     "serif": true,
     "wallpaperDim": 8
   },
-  "updated_at": "2026-10-23T06:04:42Z"
+  "updated_at": "2026-10-23T06:22:27Z"
 }
