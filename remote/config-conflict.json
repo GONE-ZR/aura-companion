@@ -1,0 +1,96 @@
+{
+  "appearance": {
+    "background": "warm",
+    "expression": "expr.soft",
+    "iconPack": "pack.default"
+  },
+  "commands": [],
+  "configVersion": 31,
+  "copy": {
+    "emptyState": "我在。",
+    "inputPlaceholder": "说点什么…"
+  },
+  "features": {
+    "agentMode": true,
+    "developerTools": true,
+    "emotionTint": true,
+    "export": true,
+    "killSwitch": false,
+    "lifeLine": true,
+    "moodFace": true,
+    "multiSession": true,
+    "reminders": true,
+    "search": true,
+    "shortcuts": true,
+    "updateBar": true,
+    "voice": true,
+    "voiceTts": true,
+    "wallpaper": true,
+    "weather": true
+  },
+  "flags": {
+    "agentMode": true,
+    "killSwitch": false,
+    "lifeLine": true,
+    "memoryExtract": true,
+    "modelTier": "standard",
+    "reminders": true,
+    "search": true,
+    "voiceTts": true,
+    "weather": true
+  },
+  "icon": {
+    "appIconUrl": "",
+    "default": "AliasDefault"
+  },
+  "model": {
+    "promptVersion": "v1.0.0",
+    "temperature": 1.25,
+    "tier": "standard"
+  },
+  "net": {
+    "chatProxy": ""
+  },
+  "note": "安静陪伴 · 远程配置（后台管理页保存这里，手机 App 自动拉取并热应用）",
+  "notify": {
+    "dailyMax": 2,
+    "quietEnd": "08:00",
+    "quietStart": "23:00"
+  },
+  "quickReplies": {
+    "enabled": true,
+    "items": [
+      "我有点累",
+      "睡不着",
+      "今天还行",
+      "想安静待会儿"
+    ],
+    "max": 3
+  },
+  "schemaVersion": 1,
+  "shortcuts": [
+    "我有点累",
+    "睡不着",
+    "今天还行",
+    "想安静待会儿",
+    "焦虑太难受了"
+  ],
+  "text": {
+    "empty": "配置校验-452096",
+    "hint": "…",
+    "placeholder": "说点什么…"
+  },
+  "theme": {
+    "accent": "#90A4B0",
+    "fontScale": 1,
+    "glow": 8,
+    "ink": "#14140f",
+    "mode": "auto",
+    "paper": "#f1efea",
+    "radius": 18,
+    "serif": true,
+    "wallpaperDim": 8
+  },
+  "updated_at": "2026-10-23T06:22:27Z",
+  "version": 99
+}
