@@ -74,18 +74,15 @@ body.comic[data-night="1"]::before { filter: invert(1); opacity: .5; }
 
 /* ---------------- ③ 手绘气泡 ---------------- */
 body.comic #log > .msg .bubble {
-  /* 用 !important 压过 theme-soft / polish 的气泡样式（主题层之间的互斥） */
-  background: var(--paper) !important;
-  border: 2px solid var(--ink) !important;
+  /* 背景 / 边框 / 圆角交给 manga.css（那里按条随机四角 8~16px） */
   box-shadow: none !important;         /* 漫画不用阴影 */
-  border-radius: 16px 8px 14px 9px / 9px 14px 8px 16px !important;   /* 不规则 */
   position: relative;
   padding: 12px 15px;
   backdrop-filter: none !important;    /* 不要玻璃拟态 */
 }
 /* 每句圆角轻微抖动（用 nth-child 伪随机，避免每帧变） */
-body.comic #log > .msg:nth-child(3n) .bubble { border-radius: 9px 16px 8px 14px / 14px 8px 16px 9px !important; }
-body.comic #log > .msg:nth-child(3n+1) .bubble { border-radius: 14px 9px 16px 8px / 8px 16px 9px 14px !important; }
+
+
 
 /* 尾巴朝她（AI 气泡左下；自己的气泡右下） */
 body.comic #log > .msg.ai .bubble::after {
@@ -119,7 +116,8 @@ body.comic #log > .msg.me .bubble::after {
 /* L3 气泡正文：≥16pt、行高 1.65、**不加粗** */
 body.comic #log > .msg .bubble-text {
   background: transparent !important;
-  font-family: "Smiley Sans", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* §6 L3：正文用系统黑体（得意黑只留给 L1 拟声词 / L2 标题） */
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   font-size: 16.5px;
   line-height: 1.65;
   font-weight: 400 !important;

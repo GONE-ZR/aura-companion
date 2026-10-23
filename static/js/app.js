@@ -1202,6 +1202,7 @@
 
     /* ---------------- 15.18 第二部分：宽屏双栏 / 快捷键 / 通知守卫 ---------------- */
     try {
+      if (window.AuraManga) window.AuraManga.init();
       if (window.AuraWide) window.AuraWide.init();
       if (window.AuraKeys) window.AuraKeys.init();
       if (window.AuraNotify) window.AuraNotify.init();

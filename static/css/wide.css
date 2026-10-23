@@ -24,7 +24,7 @@
     left: var(--wl, 300px);
   }
 
-  #wide-left {
+  body.wide #wide-left {
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -41,7 +41,7 @@
   }
 
   /* 拖动条：8px 热区，视觉上只有 1px 线 */
-  #wide-resize {
+  body.wide #wide-resize {
     display: block;
     position: fixed;
     top: 0;

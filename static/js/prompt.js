@@ -20,6 +20,8 @@
   var PROMPT_VERSION = "v1.0.0";
 
   var MAX_CHARS = 4000;
+  var TRIM_FLOOR = 12;
+  var MAX_HISTORY = 20;   /* §2.1：历史最多 20 条 */   /* 超预算时一次裁到 12 条（§2.2 下限），避免每轮滑动 */
   var MAX_MEMORIES = 8;
 
   /* ---------------- 附录 A（一~六，静态） ---------------- */
@@ -284,6 +286,24 @@
 
   function buildStateBlock(opts, engine) {
     var st = opts.state || {};
+
+    /* ---------------- A 份 §7：只注入一句人话（无数字、无字段名） ----------------
+       这一条**替代**原来的 7 字段状态块；「这一轮怎么演」「归因」等指令句一并删除。 */
+    var EC = (typeof window !== "undefined" && window.AuraEmotionCore) ? window.AuraEmotionCore : null;
+    if (EC && st.core) {
+      try {
+        var one = EC.oneLine({
+          core: st.core,
+          /* 外显状态以内核映射为准（忍耐值优先规则已在 mapState 内处理） */
+          state: EC.mapState(st.core, st.patience),
+          intent: st.core.intent,
+          patience: st.patience,
+          seed: opts.now || Date.now()
+        });
+        return one;   /* 形如：「【现在】有点累，不太想说话。跟你无关。」 */
+      } catch (e) { /* 退回旧状态块 */ }
+    }
+
     var now = opts.now || Date.now();
     var d = new Date(now);
     var view = engine ? engine.publicView(st) : { word: "挺平静", cause: null };
@@ -378,37 +398,47 @@
     var stateBlock = buildStateBlock(opts, engine);
     var memBlock = buildMemoriesBlock(opts.memories);
 
-    /* 历史：只追加，原样保留 */
+    /* 历史：只追加，原样保留
+       ★ 摘要不再插在历史前面（那等于改写前缀，会让整段缓存作废），
+         而是并进最后一条 user 的动态块里（§1.1 [C]）。 */
     var msgs = [];
-    if (opts.summary) msgs.push({ role: "system", content: "【之前的对话摘要】" + opts.summary });
     (opts.history || []).forEach(function (m) {
       if (m && m.text) msgs.push({ role: m.role === "user" ? "user" : "assistant", content: m.text });
     });
 
-    /* 预算：历史 + 状态 + 记忆 ≤ 4000（从旧往新裁） */
+    /* 预算：超了才裁，而且一次裁到 12 条（不掉队式滑动，否则每轮都断缓存） */
     var budget = MAX_CHARS - system.length - stateBlock.length - memBlock.length - 40;
-    var kept = [];
-    for (var i = msgs.length - 1; i >= 0; i--) {
-      var len = String(msgs[i].content).length;
-      if (budget - len < 0) break;
-      budget -= len;
-      kept.unshift(msgs[i]);
+    var totalLen = msgs.reduce(function (a, m) { return a + String(m.content).length; }, 0);
+    var kept;
+    if (totalLen <= budget) {
+      kept = msgs.slice();                              /* 没超就不动：前缀完整，缓存全命中 */
+    } else if (msgs.length > TRIM_FLOOR) {
+      kept = msgs.slice(msgs.length - TRIM_FLOOR);      /* 一次裁到 12 条 */
+      while (kept.length > 1 && kept.reduce(function (a, m) { return a + String(m.content).length; }, 0) > budget) {
+        kept.shift();                                   /* 还超才继续往前丢 */
+      }
+    } else {
+      kept = msgs.slice();
+      while (kept.length > 1 && kept.reduce(function (a, m) { return a + String(m.content).length; }, 0) > budget) {
+        kept.shift();
+      }
     }
 
-    /* 最后一条 user = 状态 + 记忆 + 用户输入 */
+    /* 最后一条 user = 状态 + 记忆 + 摘要 + 用户输入（每轮会变的全部在这里）
+       ★ 结构上把"动态块"和"用户原话"拆成两条紧邻的 user：
+         这样历史里存的永远是**短的原话**（append-only、逐字节不变），
+         动态块每轮新生成、只占尾部 ~200 字 —— 前缀稳定，缓存才吃得满。
+         （合并成一条会让每条历史都带一份状态块，窗口一满就滑动，命中率掉到 60% 出头） */
+    var dyn = "（系统补充，不要复述、不要提到它：\n" + stateBlock +
+      "\n\n【你记得的事】\n" + memBlock +
+      (opts.summary ? ("\n\n【更早的对话摘要】" + String(opts.summary).slice(0, 600)) : "") +
+      "\n）";
+
     var last = kept.length ? kept[kept.length - 1] : null;
     if (last && last.role === "user") {
-      kept[kept.length - 1] = {
-        role: "user",
-        content: "（系统补充，不要复述、不要提到它：\\n" + stateBlock +
-          "\\n\\n【你记得的事】\\n" + memBlock + "\\n）\\n\\n" + last.content
-      };
+      kept.splice(kept.length - 1, 0, { role: "user", content: dyn });
     } else {
-      kept.push({
-        role: "user",
-        content: "（系统补充，不要复述：\\n" + stateBlock +
-          "\\n\\n【你记得的事】\\n" + memBlock + "\\n）"
-      });
+      kept.push({ role: "user", content: dyn });
     }
 
     return {

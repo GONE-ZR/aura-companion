@@ -64,7 +64,8 @@
       type: normType(item.type),
       when: String(item.when || "").slice(0, 20),
       confidence: normConfidence(item.confidence),
-      status: item.status === "deleted" ? "deleted" : "active",
+      status: item.status === "deleted" ? "deleted"
+        : (item.status === "superseded" ? "superseded" : "active"),
       createdAt: item.createdAt || Date.now(),
       /* 第五篇 §6：用户纠正过就留痕；被纠正两次直接删 */
       correctedAt: item.correctedAt || null,
@@ -94,8 +95,16 @@
         return m.status !== "deleted" && similar(m.fact, it.fact);
       })[0];
       if (dup) {
-        /* 已有的更确定就保留，否则升级置信度 */
-        if (it.confidence > dup.confidence) dup.confidence = it.confidence;
+        /* §4.3：合并同类，只留一条 active，旧条目转 superseded（不删、仍可查）。
+           · 新条目置信度 ≥ 旧的 → 新的上位，旧的转 superseded（留档）
+           · 新条目更不确定 → 直接丢弃（不值得为更差的版本留档，也不会撑大列表） */
+        if (it.confidence >= dup.confidence) {
+          dup.status = "superseded";
+          dup.supersededAt = Date.now();
+          dup.supersededBy = it.id;
+          list.push(it);
+          added.push(it);
+        }
         return;
       }
       list.push(it);
@@ -189,7 +198,7 @@
     opts = opts || {};
     var limit = opts.limit || 8;
     var now = opts.now || Date.now();
-    var list = (opts.list || load()).filter(function (m) { return m.status !== "deleted" && !(m.mutedTurns > 0); });
+    var list = (opts.list || load()).filter(function (m) { return m.status === "active" && !(m.mutedTurns > 0); });
     var qs = tokens(query);
     var scored = list.map(function (m) {
       var hay = m.fact + " " + (m.when || "");
@@ -247,7 +256,8 @@
 
   /* 给提示词用的视图：已删除的绝不出现 */
   function forPrompt(activeOnly) {
-    var list = load().filter(function (m) { return m.status !== "deleted"; });
+    /* 注入只取 active：superseded 留在库里可查，但绝不进上下文 */
+    var list = load().filter(function (m) { return m.status === "active"; });
     if (activeOnly) return list;
     return list;
   }

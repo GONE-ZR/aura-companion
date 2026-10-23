@@ -1,0 +1,514 @@
+/* ============================================================
+   manga.css —— 漫画风 V0 · 日式日常系（覆盖 comic.css 的视觉层）
+
+   铁律
+     · 平涂底 + 45° 网点（四档 0/8/15/30），无渐变、无玻璃、无投影
+     · 墨线 #1A1A1A：外轮廓 2px / 内线 1px，边框 1.5~2px，圆角 2px
+     · 分格之间 10px 白沟，露背景网点，不填色
+     · 气泡：不规则四角 8~16px、2px 描边、#FDFBF4、尾巴朝她
+     · 字体分层：L1/L2 得意黑，L3/L4 系统黑体；禁加粗、禁 skewX
+     · 反白字只强调一处；纯黑块 ≤2 处
+   ============================================================ */
+
+/* ---------------- 设计令牌 ---------------- */
+body.comic {
+  --ink: #1A1A1A;
+  --ink-soft: #2A2A2A;
+  --dim: #6B6B6B;
+  --paper: #FDFBF4;
+  --warm: #FDF6E8;
+  --dusk: #FBE8D3;
+  --cool: #E9EEF2;
+  --gray: #E4E6E8;
+  --accent2: #C9504A;
+
+  --gut: 10px;                 /* 白沟 */
+  --panel-r: 2px;              /* 分格圆角 */
+
+  background: var(--warm);
+  color: var(--ink-soft);
+}
+
+/* 背景四色（平涂，不渐变） */
+body.comic[data-bg="warm"] { background: var(--warm); }
+body.comic[data-bg="dusk"] { background: var(--dusk); }
+body.comic[data-bg="cool"] { background: var(--cool); }
+body.comic[data-bg="gray"] { background: var(--gray); }
+
+/* ---------------- 网点（四档，主色加深 20%） ----------------
+   点半径 1.3px、45° 斜排；密度只用 4 个离散值 */
+body.comic {
+  --dot-color: hsl(calc(var(--acc-h, 30) * 1deg) calc(var(--acc-s, 42) * 1%) calc(var(--acc-l, 62) * 1% - 20%));
+  --dot-step: 12px;          /* 15% */
+  --dot-alpha: .5;
+}
+body.comic[data-dots="0"]  { --dot-step: 40px; --dot-alpha: 0; }
+body.comic[data-dots="8"]  { --dot-step: 20px; --dot-alpha: .55; }
+body.comic[data-dots="15"] { --dot-step: 12px; --dot-alpha: .62; }
+body.comic[data-dots="30"] { --dot-step: 7px;  --dot-alpha: .75; }
+
+body.comic::before {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  z-index: 0;
+  transform: rotate(45deg);
+  background-image: radial-gradient(circle at 50% 50%,
+      var(--dot-color) 1.3px, transparent 1.4px);
+  background-size: var(--dot-step) var(--dot-step);
+  opacity: var(--dot-alpha);
+  transition: opacity 420ms ease, background-size 420ms ease;
+}
+
+/* ---------------- 分格 ---------------- */
+body.comic #stage {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gut);              /* 白沟：露出 body 的网点 */
+  padding: var(--gut) var(--gut) 6px;
+}
+
+body.comic .panel {
+  position: relative;
+  background: var(--paper);
+  border: 2px solid var(--ink);  /* 1.5~2px */
+  border-radius: var(--panel-r);
+  box-sizing: border-box;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* 主分格：立绘 60% */
+body.comic .panel-art {
+  flex: 0 0 60vh;          /* §1.1：主分格 60% 屏高 */
+  max-height: 66vh;
+  min-height: 0;
+}
+
+/* 对话分格 */
+body.comic .panel-log {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 允许 1~2° 倾斜，但重心必须正（小的反向位移补偿） */
+body.comic .panel-art { transform: rotate(-1.2deg); }
+body.comic .panel-log { transform: rotate(0.6deg); }
+
+/* 夜间也用纸色：漫画是"画在纸上"，不跟着系统深色反色 */
+body.comic[data-night="1"] { --paper: #FDFBF4; }
+
+/* 分格内部的网点（比背景更淡，避免压住文字） */
+body.comic .panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle at 50% 50%,
+      var(--dot-color) 1.2px, transparent 1.3px);
+  background-size: calc(var(--dot-step) * 1.4) calc(var(--dot-step) * 1.4);
+  opacity: calc(var(--dot-alpha) * .45);
+}
+
+/* 描边抖动层：只作用于边框，不动文字 */
+body.comic .panel-ink {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ink);
+  border-radius: var(--panel-r);
+  pointer-events: none;
+  z-index: 3;
+  filter: url(#ink-wobble);
+}
+
+/* 内线（1px）—— 分隔条用 */
+body.comic .panel-log #log {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  overflow-y: auto;
+  padding: 10px 10px 8px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+
+/* ---------------- 程序设计立绘（占位：色块 + 剪影） ---------------- */
+body.comic .art-figure {
+  position: absolute;
+  right: 8%;
+  bottom: 0;
+  width: 46%;
+  height: 92%;
+  z-index: 1;
+  transition: transform 600ms cubic-bezier(.2, .8, .2, 1), opacity 600ms ease, height 600ms ease, filter 600ms ease;
+}
+
+/* 头 / 发 / 身：程序化剪影（V0 没有真立绘素材） */
+body.comic .fig-body {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 0;
+  height: 56%;
+  background: #EDE8DD;                  /* 衣服：浅色块 */
+  border: 2px solid var(--ink);
+  border-radius: 44% 44% 0 0 / 30% 30% 0 0;
+  box-sizing: border-box;
+  display: block;
+}
+body.comic .fig-head {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  width: 40%;
+  aspect-ratio: 1 / 1.12;
+  margin-left: -20%;
+  background: #F7F3EA;                 /* 脸：纸色，靠墨线勾轮廓 */
+  border: 2px solid var(--ink);
+  border-radius: 50% 50% 46% 46% / 54% 54% 46% 46%;
+  box-sizing: border-box;
+  display: block;
+  z-index: 3;
+}
+/* 头发：贝塔块（纯黑），盖住上半张脸轮廓 */
+body.comic .fig-hair {
+  position: absolute;
+  left: 50%;
+  top: 3%;
+  width: 46%;
+  height: 20%;
+  margin-left: -23%;
+  background: var(--ink);
+  border-radius: 50% 50% 30% 30% / 62% 62% 38% 38%;
+  display: block;
+  z-index: 4;
+}
+/* 两缕鬓发 */
+body.comic .fig-hair::before,
+body.comic .fig-hair::after {
+  content: "";
+  position: absolute;
+  top: 42%;
+  width: 22%;
+  height: 74%;
+  background: var(--ink);
+  border-radius: 0 0 60% 40%;
+}
+body.comic .fig-hair::before { left: 2%; transform: rotate(-6deg); }
+body.comic .fig-hair::after { right: 2%; border-radius: 0 0 40% 60%; transform: rotate(6deg); }
+
+/* 脖子 */
+body.comic .art-figure::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: 9%;
+  height: 8%;
+  margin-left: -4.5%;
+  background: #F7F3EA;
+  border-left: 2px solid var(--ink);
+  border-right: 2px solid var(--ink);
+  z-index: 2;
+}
+
+/* 状态 → 体量/姿态（留白靠它撑） */
+body.comic[data-st="calm"]   .art-figure { height: 86%; }
+body.comic[data-st="soft"]   .art-figure { height: 88%; }
+body.comic[data-st="tired"]  .art-figure { height: 74%; transform: translateY(4%) rotate(1.5deg); }
+body.comic[data-st="low"]    .art-figure { height: 70%; transform: translateY(6%) rotate(2deg); }
+body.comic[data-st="sulky"]  .art-figure { height: 82%; transform: rotate(-3deg); }
+
+/* blank：缩到格高 45%、居右下 */
+body.comic[data-st="blank"]  .art-figure {
+  height: 45%;
+  right: 6%;
+  bottom: 2%;
+  opacity: .8;
+}
+
+/* serious：背影/侧脸 —— 更深、更窄、偏转 */
+body.comic[data-st="serious"] .art-figure {
+  height: 90%;
+  width: 38%;
+  right: 12%;
+  filter: brightness(.55) saturate(.7);
+  transform: rotate(-8deg);
+}
+
+/* 留白：任何状态至少 25% 空 */
+body.comic .panel-art::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 48%;
+  background: var(--paper);
+  z-index: 1;
+}
+
+/* 纯黑块 ベタ：两处，各 ≤8% 面积 */
+body.comic .beta-1,
+body.comic .beta-2 {
+  position: absolute;
+  background: var(--ink);
+  z-index: 2;
+  pointer-events: none;
+}
+body.comic .beta-1 { left: 0; bottom: 0; width: 22%; height: 30%; clip-path: polygon(0 18%, 100% 0, 100% 100%, 0 100%); }
+body.comic .beta-2 { right: 0; top: 0; width: 26%; height: 18%; clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%); }
+
+/* ---------------- L1 拟声词（得意黑，旋转 ±8°） ---------------- */
+body.comic .art-sfx {
+  position: absolute;
+  left: 8%;
+  top: 12%;
+  z-index: 4;
+  font-family: "Smiley Sans", "PingFang SC", sans-serif;
+  font-size: 44px;
+  line-height: 1.0;
+  font-weight: 400 !important;
+  letter-spacing: .02em;
+  color: var(--ink);
+  transform: rotate(-6deg);
+  text-shadow: none;
+  user-select: none;
+  pointer-events: none;
+}
+body.comic[data-st="serious"] .art-sfx { color: var(--accent2); transform: rotate(-8deg); }
+
+/* ---------------- 反白字（一次只强调一处） ---------------- */
+body.comic .panel-art .sfx-knock {
+  display: inline-block;
+  padding: 2px 6px 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 16px;             /* 仍为正文大小 */
+  line-height: 1.4;
+}
+
+/* ---------------- 气泡（手绘不规则） ---------------- */
+body.comic #log > .msg .bubble,
+body.comic #log > .msg.ai .bubble,
+body.comic #log > .msg.me .bubble {
+  background: #FDFBF4 !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  max-width: 78%;
+  /* 四条边各自 8~16px（JS 每条随机一次，写内联 --b1..--b4） */
+  border-radius: var(--b1, 14px) var(--b2, 9px) var(--b3, 15px) var(--b4, 10px) !important;
+  transform: rotate(var(--brot, 0deg)) !important;
+  padding: 11px 14px;
+  position: relative;
+  overflow: visible;
+}
+
+/* 心声：虚线边 */
+body.comic #log > .msg.ai .bubble[data-kind="thought"] {
+  border-style: dashed !important;
+}
+
+/* 尾巴朝她 */
+body.comic #log > .msg.ai .bubble::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  bottom: -9px;
+  width: 13px;
+  height: 12px;
+  background: var(--paper);
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0 0 0 7px;
+  transform: rotate(-10deg);
+}
+body.comic #log > .msg.me .bubble::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  bottom: -9px;
+  width: 13px;
+  height: 12px;
+  background: var(--paper);
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0 0 7px 0;
+  transform: rotate(10deg);
+}
+
+/* 入场：上移 8pt + 淡入 180ms */
+body.comic #log > .msg {
+  animation: manga-in 180ms ease both;
+}
+@keyframes manga-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------- L3 正文：系统黑体，16.5px / 1.65 ----------------
+   §1.5 动态字号：跟随 --font-scale（远端配置 / 系统字号放大），
+   默认 1 时与原值逐像素一致（16.5px × 1 = 16.5px）。 */
+body.comic #log > .msg .bubble-text {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif !important;
+  font-size: calc(16.5px * var(--font-scale, 1)) !important;
+  line-height: 1.65 !important;
+  font-weight: 400 !important;
+  color: var(--ink-soft) !important;
+  background: transparent !important;
+  letter-spacing: 0;
+}
+
+/* 最大字号档：气泡允许纵向滚动，不裁切（§1.5 / 允许改动第 6 条） */
+body.comic #log > .msg .bubble {
+  max-height: 55vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---------------- L2 标题 / 状态词：得意黑 18~24px ---------------- */
+body.comic #ai-name,
+body.comic .status-card > div:first-child {
+  font-family: "Smiley Sans", sans-serif !important;
+  font-size: 19px !important;
+  line-height: 1.3 !important;
+  font-weight: 400 !important;
+}
+
+/* ---------------- L4：系统字体（时间/系统提示/安全卡/记录库） ---------------- */
+body.comic .msg-time,
+body.comic .day-sep,
+body.comic .hint,
+body.comic .safety-card,
+body.comic .safety-bubble,
+body.comic .ft-stats,
+body.comic .ft-session-title,
+body.comic .ft-session-sub,
+body.comic .quick-replies button,
+body.comic input,
+body.comic textarea,
+body.comic .drawer,
+body.comic .keys-row kbd,
+body.comic #cfg-line {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  font-weight: 400 !important;
+}
+
+/* 系统类文字：无描边、无网点 */
+body.comic .safety-card,
+body.comic .safety-bubble {
+  border: 1px solid #C9C4BC !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  color: #222 !important;
+}
+body.comic .safety-card::after,
+body.comic .safety-bubble::after { content: none !important; }
+
+/* ---------------- 卡片圆角 ≤4px、无投影 ---------------- */
+body.comic .status-card,
+body.comic .modal-body,
+body.comic #keygate .keygate-body {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  border: 1.5px solid var(--ink) !important;
+}
+
+/* ---------------- 输入区：墨线，无阴影 ---------------- */
+body.comic #input-bar {
+  border-top: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+body.comic #input {
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+/* 禁止加粗（单字重字体加粗会静默回退系统字） */
+body.comic b,
+body.comic strong { font-weight: 400 !important; }
+
+/* ---------------- 减弱动效：静态保留，动画全关 ---------------- */
+@media (prefers-reduced-motion: reduce) {
+  body.comic #log > .msg { animation: none !important; }
+  body.comic .panel-art,
+  body.comic .panel-log,
+  body.comic .art-figure { transform: none !important; transition: none !important; }
+  body.comic::before { transition: none !important; }
+}
+
+/* 低端机降级（JS 打上 data-lite）：网点换静态纹理、关过渡 */
+body.comic[data-lite="1"]::before,
+body.comic[data-lite="1"] .panel::after {
+  transition: none !important;
+}
+body.comic[data-lite="1"] .panel-ink { filter: none; }
+body.comic[data-lite="1"] .art-figure { transition: none !important; }
+
+/* ---------------- 宽屏：舞台跟着左栏让位 ---------------- */
+@media (min-width: 768px) {
+  body.wide.comic #stage { margin-left: 0; }
+}
+
+
+/* ============================================================
+   夜间检测修复（2026-10-23）
+     A-1 键盘弹起时主分格让位，对话区保底 180px
+     A-2 漫画风恒纸色 → 时间戳回到深灰（对比 4.95:1）
+     A-3 触控热区扩到 ≥44px（padding + 负 margin，视觉尺寸不变）
+     A-5 漫画风下一律平涂，干掉 [data-face] 的渐变
+   ============================================================ */
+
+/* A-1：短视口（键盘弹起）时主分格不再吃 60vh */
+@media (max-height: 620px) {
+  body.comic .panel-art { flex: 0 0 min(34vh, 210px); }
+  body.comic .panel-log { min-height: 180px; }
+  body.comic #stage { gap: 8px; padding: 8px 8px 4px; }
+}
+
+/* A-2：漫画风下时间戳/日期条必须是深灰（纸色底上 4.95:1） */
+body.comic #log .msg-time,
+body.comic #log .day-sep { color: #6B6B6B !important; }
+
+/* A-3：热区扩展（视觉尺寸一像素都不变）
+   ★ 这些按钮是 width/height 固定盒，padding 撑不大盒子 →
+     改用绝对定位的透明 ::before 覆盖层扩热区（::after 已被视觉占用）。 */
+.speak-btn, .ub-x, .ub-btn, .ft-chip, .ft-face, .ft-session-title, .switch {
+  position: relative;
+}
+.speak-btn::before,
+.ub-x::before,
+.ub-btn::before,
+.ft-chip::before,
+.ft-face::before,
+.ft-session-title::before,
+.switch::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: transparent;
+  z-index: 1;
+}
+/* 会话标题是一整行，横向不需要 48，纵向补到 44 就够 */
+.ft-session-title::before { width: 100%; height: 44px; border-radius: 8px; }
+
+/* A-5：漫画风不允许多边形/渐变气泡 */
+body.comic #log > .msg.ai .bubble[data-face],
+body.comic #log > .msg.ai .bubble[data-face="angry"],
+body.comic #log > .msg.ai .bubble[data-face="excited"] {
+  background-image: none !important;
+  background: #FDFBF4 !important;
+}

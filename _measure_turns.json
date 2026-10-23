@@ -1,0 +1,74 @@
+{
+  "rows": [
+    {
+      "i": 1,
+      "chars": 3189,
+      "sys": 2730,
+      "hist": 0,
+      "prompt": 1980,
+      "hit": 1536,
+      "miss": 444,
+      "out": 21,
+      "first": 813,
+      "reply": "{\"e\":\"calm\",\"b\":\"w"
+    },
+    {
+      "i": 2,
+      "chars": 3686,
+      "sys": 2730,
+      "hist": 2,
+      "prompt": 2297,
+      "hit": 1920,
+      "miss": 377,
+      "out": 24,
+      "first": 423,
+      "reply": "{\"e\":\"calm\",\"b\":\"w"
+    },
+    {
+      "i": 3,
+      "chars": 3728,
+      "sys": 2730,
+      "hist": 3,
+      "prompt": 2324,
+      "hit": 1536,
+      "miss": 788,
+      "out": 20,
+      "first": 535,
+      "reply": "{\"e\":\"calm\",\"b\":\"w"
+    },
+    {
+      "i": 4,
+      "chars": 3727,
+      "sys": 2730,
+      "hist": 3,
+      "prompt": 2323,
+      "hit": 1536,
+      "miss": 787,
+      "out": 21,
+      "first": 477,
+      "reply": "{\"e\":\"blank\",\"b\":\""
+    },
+    {
+      "i": 5,
+      "chars": 3726,
+      "sys": 2730,
+      "hist": 3,
+      "prompt": 2320,
+      "hit": 1536,
+      "miss": 784,
+      "out": 14,
+      "first": 834,
+      "reply": "你倒是先说你自己啊。\n\n我还没吃，等"
+    }
+  ],
+  "summary": {
+    "avgChars": 3611,
+    "maxChars": 3728,
+    "prompt": 11244,
+    "hit": 8064,
+    "miss": 3180,
+    "out": 100,
+    "hitRate": 71.7,
+    "avgFirst": 616
+  }
+}

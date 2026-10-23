@@ -55,6 +55,8 @@
         if (!k || k.indexOf("aura_msgs_") !== 0) continue;
         var sid = k.slice("aura_msgs_".length);
         if (!sid || known[sid]) continue;
+        /* B-4：软删除的消息不该把会话重新登记回来 */
+        if (window.AuraRecords && window.AuraRecords.messages(sid).length === 0) continue;
         known[sid] = true;
         var msgs = S.get(k, []) || [];
         var title = "旧的对话";

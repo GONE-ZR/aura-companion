@@ -356,7 +356,9 @@
           state: engineState(),
           memories: window.AuraMemfacts ? window.AuraMemfacts.forPrompt() : [],
           history: messages.map(function (m) {
-            return { role: m.role === "me" ? "user" : "assistant", text: m.content };
+            /* ★ 用"发出去的那份"(wire)而不是显示原文：
+               否则下一轮同一条消息内容变了，前缀就断，缓存全废 */
+            return { role: m.role === "me" ? "user" : "assistant", text: m.wire || m.content };
           }),
           now: Date.now(),
           lastGap: lastGapMs(),
@@ -377,6 +379,55 @@
         });
       }
     } catch (e) { asm = null; }
+
+    /* ---------------- 情绪核（A 份）：**发请求前**同步算完 ----------------
+       规则：用户消息到达后、生成回复前；不阻塞首字（纯本地计算，微秒级）。
+       内核与 7 状态/忍耐值并存：内核只影响外显映射与注入的一句话。 */
+    try {
+      if (window.AuraEmotionCore) {
+        var C = window.AuraEmotionCore;
+        var st0 = engineState() || {};
+        st0.core = C.ensure(st0.core, Date.now());
+        var prevAi = "";
+        for (var pi = messages.length - 2; pi >= 0; pi--) {
+          if (messages[pi] && messages[pi].role === "ai") { prevAi = messages[pi].content || ""; break; }
+        }
+        var obs = C.observe({
+          core: st0.core, userText: userText, prevAssistantText: prevAi,
+          now: Date.now(), messageId: (messages[messages.length - 1] || {}).id
+        });
+        st0.core = obs.core;
+        st0.state = C.mapState(st0.core, st0.patience);     /* 外显层跟着内核走 */
+        _engine = st0;
+        saveEngine();
+        try {
+          if (window.AuraEmotionUI) {
+            var em = C.decideIntent(st0.core, {
+              userAsked: /[?？]|怎么了/.test(userText),
+              crisis: !!(window.AuraSafety && window.AuraSafety.classify && window.AuraSafety.classify(userText).hit)
+            });
+            window.AuraEmotionUI.applyMeta({
+              e: st0.state,
+              b: ({ soft: "warm", smile: "warm", calm: "warm", tired: "gray", low: "dusk", sulky: "dusk", serious: "cool", blank: "gray" })[st0.state] || "warm",
+              i: st0.core.valence < -0.3 ? 1 : 0
+            });
+          }
+        } catch (e) { /* 视觉失败不影响对话 */ }
+      }
+    } catch (e) { /* 情绪核失败不许影响对话 */ }
+
+    /* ★ 把"这一轮真正发出去的最后一条 user"记到消息上（wire）——
+       下一轮拼历史时用它，前缀才能和上一轮逐字节一致，缓存才吃得满。 */
+    try {
+      if (asm && asm.messages && asm.messages.length) {
+        var lastSent = asm.messages[asm.messages.length - 1];
+        var lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.role === "me" && lastSent && lastSent.role === "user") {
+          lastMsg.wire = String(lastSent.content);
+          if (window.Aura && window.Aura.messages) window.Aura.messages.save(messages);
+        }
+      }
+    } catch (e) { /* ignore */ }
 
     return {
       system_prompt: asm ? asm.system : buildSystem(),
@@ -1178,10 +1229,22 @@
 
   /* ---------------- 记忆抽取（§九：每 6~8 轮，不阻塞首字） ---------------- */
   var turnCount = 0;
+  var summaryTurns = 0;
   var lastExtractAt = 0;
 
   function recordTurn() {
     turnCount += 1;
+
+    /* B-3：每 30 轮做一次分段摘要。回调**故意忽略** rest —— 原文一条都不删。
+       （放在最前面：不能因为记忆抽取的 7 轮节流而跳过节数统计） */
+    try {
+      summaryTurns += 1;
+      if (summaryTurns >= 30 && window.Aura && window.Aura.memory && window.Aura.memory.maybeSummarize) {
+        summaryTurns = 0;
+        window.Aura.memory.maybeSummarize(messages, function () { /* 只写摘要，不覆盖 messages */ });
+      }
+    } catch (e) { /* 摘要失败不影响对话 */ }
+
     if (!window.AuraMemfacts || !window.AuraPrompt) return;
     if (!window.AuraMemfacts.shouldExtract(turnCount, 7)) return;
     if (Date.now() - lastExtractAt < 60 * 1000) return;
